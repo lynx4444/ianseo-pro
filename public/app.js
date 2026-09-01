@@ -673,6 +673,7 @@ async function openTournamentHub(tournament) {
 
   // Reset tabs
   switchModalTab('overview');
+  document.body.style.overflow = 'hidden';
   elements.tournamentModal.style.display = 'flex';
 
   // Load details from API
@@ -1094,6 +1095,7 @@ function switchModalTab(tabName) {
 
 function closeModal() {
   elements.tournamentModal.style.display = 'none';
+  document.body.style.overflow = '';
   state.activeTournament = null;
   state.activeTournamentDetails = null;
 }
@@ -1107,11 +1109,13 @@ window.openPdfViewer = function(pdfUrl, title) {
   const cleanProxyUrl = `/api/proxy/pdf?url=${encodeURIComponent(pdfUrl)}`;
   elements.pdfIframe.src = cleanProxyUrl;
   elements.pdfDownloadDirectBtn.href = pdfUrl;
+  document.body.style.overflow = 'hidden';
   elements.pdfModal.style.display = 'flex';
 };
 
 function closePdfModal() {
   elements.pdfModal.style.display = 'none';
+  document.body.style.overflow = '';
   elements.pdfIframe.src = '';
 }
 
