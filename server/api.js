@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, '../public')));
  */
 app.get('/api/tournaments', async (req, res) => {
   try {
-    const { year = '2026', countryid = '', comptime = '', q = '', limit = 100, offset = 0 } = req.query;
+    const { year = '2026', countryid = '', comptime = '', q = '', limit = '5000', offset = 0 } = req.query;
     const data = await scraper.getTournaments({
       year,
       countryid,
@@ -26,7 +26,7 @@ app.get('/api/tournaments', async (req, res) => {
       search: q
     });
 
-    const numLimit = parseInt(limit, 10) || 100;
+    const numLimit = limit === 'all' ? data.tournaments.length : (parseInt(limit, 10) || 5000);
     const numOffset = parseInt(offset, 10) || 0;
     const paginated = data.tournaments.slice(numOffset, numOffset + numLimit);
 

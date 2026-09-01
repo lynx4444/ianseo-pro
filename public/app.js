@@ -12,6 +12,8 @@ const state = {
   tournaments: [],
   countries: [],
   years: [],
+  currentPage: 1,
+  pageSize: 150,
   activeTournament: null,
   activeTournamentDetails: null,
   autoRefreshInterval: null,
@@ -54,6 +56,7 @@ const elements = {
   tournamentsGrid: document.getElementById('tournamentsGrid'),
   tournamentsTableWrapper: document.getElementById('tournamentsTableWrapper'),
   tournamentsTableBody: document.getElementById('tournamentsTableBody'),
+  paginationContainer: document.getElementById('paginationContainer'),
   emptyState: document.getElementById('emptyState'),
   
   // Tournament Hub Modal
@@ -162,6 +165,7 @@ function setupEventListeners() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       state.searchQuery = val;
+      state.currentPage = 1;
       renderTournaments();
       updateFilterChips();
     }, 200);
@@ -171,6 +175,7 @@ function setupEventListeners() {
     elements.globalSearchInput.value = '';
     elements.clearSearchBtn.style.display = 'none';
     state.searchQuery = '';
+    state.currentPage = 1;
     renderTournaments();
     updateFilterChips();
   });
@@ -201,6 +206,7 @@ function setupEventListeners() {
   elements.statusTabs.querySelectorAll('.status-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       const timeVal = btn.getAttribute('data-time');
+      state.currentPage = 1;
       setActiveStatusTab(timeVal);
     });
   });
@@ -208,12 +214,14 @@ function setupEventListeners() {
   // Year select
   elements.yearSelect.addEventListener('change', async (e) => {
     state.year = e.target.value;
+    state.currentPage = 1;
     await loadTournaments();
   });
 
   // Country select
   elements.countrySelect.addEventListener('change', async (e) => {
     state.countryid = e.target.value;
+    state.currentPage = 1;
     await loadTournaments();
   });
 
@@ -293,7 +301,7 @@ async function loadTournaments() {
       year: state.year,
       countryid: state.countryid,
       comptime: state.comptime,
-      limit: '150'
+      limit: '5000'
     });
 
     const res = await fetch(`/api/tournaments?${params.toString()}`);
@@ -389,12 +397,31 @@ function renderTournaments() {
     );
   }
 
-  // Update count
-  elements.resultsCount.textContent = `${list.length} / ${state.tournaments.length}`;
+  const totalCount = list.length;
+  const totalPages = Math.ceil(totalCount / state.pageSize);
 
-  if (list.length === 0) {
+  if (state.currentPage > totalPages && totalPages > 0) {
+    state.currentPage = totalPages;
+  }
+  if (state.currentPage < 1) {
+    state.currentPage = 1;
+  }
+
+  const startIndex = (state.currentPage - 1) * state.pageSize;
+  const endIndex = Math.min(startIndex + state.pageSize, totalCount);
+  const pagedList = list.slice(startIndex, endIndex);
+
+  // Update count & page indicator
+  if (totalCount > state.pageSize) {
+    elements.resultsCount.textContent = `Page ${state.currentPage} of ${totalPages} (${startIndex + 1}–${endIndex} of ${totalCount})`;
+  } else {
+    elements.resultsCount.textContent = `${totalCount} / ${state.tournaments.length}`;
+  }
+
+  if (totalCount === 0) {
     elements.tournamentsGrid.style.display = 'none';
     elements.tournamentsTableWrapper.style.display = 'none';
+    if (elements.paginationContainer) elements.paginationContainer.style.display = 'none';
     elements.emptyState.style.display = 'block';
     return;
   }
@@ -404,12 +431,109 @@ function renderTournaments() {
   if (state.viewMode === 'grid') {
     elements.tournamentsTableWrapper.style.display = 'none';
     elements.tournamentsGrid.style.display = 'grid';
-    renderGridView(list);
+    renderGridView(pagedList);
   } else {
     elements.tournamentsGrid.style.display = 'none';
     elements.tournamentsTableWrapper.style.display = 'block';
-    renderTableView(list);
+    renderTableView(pagedList);
   }
+
+  renderPagination(totalCount, totalPages);
+}
+
+/**
+ * Render Pagination Controls
+ */
+function renderPagination(totalCount, totalPages) {
+  if (!elements.paginationContainer) return;
+
+  if (totalPages <= 1) {
+    elements.paginationContainer.style.display = 'none';
+    return;
+  }
+
+  elements.paginationContainer.style.display = 'flex';
+  elements.paginationContainer.innerHTML = '';
+
+  const info = document.createElement('div');
+  info.className = 'pagination-info';
+  info.innerHTML = `Page <span>${state.currentPage}</span> of <span>${totalPages}</span> (<span>150</span> / page)`;
+
+  const controls = document.createElement('div');
+  controls.className = 'pagination-controls';
+
+  // Prev Button
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'page-btn';
+  prevBtn.disabled = state.currentPage === 1;
+  prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i> Prev';
+  prevBtn.addEventListener('click', () => {
+    if (state.currentPage > 1) {
+      goToPage(state.currentPage - 1);
+    }
+  });
+  controls.appendChild(prevBtn);
+
+  // Page Numbers
+  const pageNumbers = getPaginationPages(state.currentPage, totalPages);
+  pageNumbers.forEach(p => {
+    if (p === '...') {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'page-ellipsis';
+      ellipsis.textContent = '...';
+      controls.appendChild(ellipsis);
+    } else {
+      const numBtn = document.createElement('button');
+      numBtn.className = `page-num-btn ${p === state.currentPage ? 'active' : ''}`;
+      numBtn.textContent = p;
+      numBtn.addEventListener('click', () => {
+        if (p !== state.currentPage) {
+          goToPage(p);
+        }
+      });
+      controls.appendChild(numBtn);
+    }
+  });
+
+  // Next Button
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'page-btn';
+  nextBtn.disabled = state.currentPage === totalPages;
+  nextBtn.innerHTML = 'Next <i class="fa-solid fa-chevron-right"></i>';
+  nextBtn.addEventListener('click', () => {
+    if (state.currentPage < totalPages) {
+      goToPage(state.currentPage + 1);
+    }
+  });
+  controls.appendChild(nextBtn);
+
+  elements.paginationContainer.appendChild(info);
+  elements.paginationContainer.appendChild(controls);
+}
+
+function goToPage(page) {
+  state.currentPage = page;
+  renderTournaments();
+  const heading = document.getElementById('tournamentsHeading');
+  if (heading) {
+    heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function getPaginationPages(current, total) {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, '...', total];
+  }
+
+  if (current >= total - 3) {
+    return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+  }
+
+  return [1, '...', current - 1, current, current + 1, '...', total];
 }
 
 /**
