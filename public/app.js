@@ -199,10 +199,12 @@ function setupEventListeners() {
     updateThemeIcon(next);
   });
 
-  // Live filter pill
-  elements.liveFilterBtn.addEventListener('click', () => {
-    setActiveStatusTab('1');
-  });
+  // Live filter pill (if present)
+  if (elements.liveFilterBtn) {
+    elements.liveFilterBtn.addEventListener('click', () => {
+      setActiveStatusTab('1');
+    });
+  }
 
   // Status tabs
   elements.statusTabs.querySelectorAll('.status-tab').forEach(btn => {
