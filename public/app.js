@@ -415,20 +415,6 @@ function renderTournaments() {
   const endIndex = Math.min(startIndex + state.pageSize, totalCount);
   const pagedList = list.slice(startIndex, endIndex);
 
-  // Update live count indicator on top left
-  const liveCount = state.comptime === '1'
-    ? list.length
-    : list.filter(t => t.isLiveToday).length;
-
-  if (elements.sectionLiveBadge && elements.sectionLiveCount) {
-    elements.sectionLiveCount.textContent = liveCount;
-    elements.sectionLiveBadge.style.display = liveCount > 0 ? 'inline-flex' : 'none';
-  }
-
-  if (elements.liveCountBadge) {
-    elements.liveCountBadge.textContent = liveCount;
-  }
-
   // Update count & page indicator
   if (totalCount > state.pageSize) {
     elements.resultsCount.textContent = `Page ${state.currentPage} of ${totalPages} (${startIndex + 1}–${endIndex} of ${totalCount})`;
