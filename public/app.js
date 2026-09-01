@@ -868,15 +868,44 @@ function selectQualificationCategory(path) {
  * Render Qualification Table
  */
 function renderQualTable(tableData) {
+  if (!tableData || !tableData.rows || tableData.rows.length === 0) {
+    elements.qualTableHead.innerHTML = '';
+    elements.qualTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted);">No qualification scores recorded yet.</td></tr>';
+    return;
+  }
+
+  // Find max cells in rows
+  const maxCells = tableData.rows.reduce((max, r) => Math.max(max, r.cells ? r.cells.length : 0), 0);
+
+  // Find columns that actually have non-empty data in at least one row
+  const validColIndices = [];
+  for (let colIdx = 0; colIdx < maxCells; colIdx++) {
+    const hasData = tableData.rows.some(r => r.cells && r.cells[colIdx] && r.cells[colIdx].trim().length > 0);
+    if (hasData) {
+      validColIndices.push(colIdx);
+    }
+  }
+
+  if (validColIndices.length === 0) {
+    elements.qualTableHead.innerHTML = '';
+    elements.qualTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted);">No scores recorded.</td></tr>';
+    return;
+  }
+
+  const fallbackQualHeaders = ['Rank', 'Athlete', 'Country / Club', 'Distance 1', 'Distance 2', 'Total', '10s', 'Xs'];
+  const cleanHeadersPool = (tableData.headers || []).filter(h => 
+    h && !h.toLowerCase().includes('qualification') && !h.toLowerCase().includes('individual')
+  );
+
+  const finalHeaders = validColIndices.map((colIdx, displayIdx) => {
+    return cleanHeadersPool[displayIdx] || (tableData.headers && tableData.headers[colIdx]) || fallbackQualHeaders[displayIdx] || `Col ${displayIdx + 1}`;
+  });
+
   // Render headers
   let ths = '<tr>';
-  if (tableData.headers.length > 0) {
-    tableData.headers.forEach(h => {
-      ths += `<th>${escapeHtml(h)}</th>`;
-    });
-  } else {
-    ths += '<th>Rank</th><th>Athlete</th><th>Country / Club</th><th>Distance 1</th><th>Distance 2</th><th>Total</th><th>10s</th><th>Xs</th>';
-  }
+  finalHeaders.forEach(h => {
+    ths += `<th>${escapeHtml(h)}</th>`;
+  });
   ths += '</tr>';
   elements.qualTableHead.innerHTML = ths;
 
@@ -886,16 +915,17 @@ function renderQualTable(tableData) {
     const tr = document.createElement('tr');
     
     // Check if category header
-    if (row.category && row.cells.length <= 1) {
+    if (row.category && (!row.cells || row.cells.length <= 1)) {
       tr.className = 'category-header-row';
-      tr.innerHTML = `<td colspan="${Math.max(tableData.headers.length, 6)}">${escapeHtml(row.category)}</td>`;
+      tr.innerHTML = `<td colspan="${finalHeaders.length}">${escapeHtml(row.category)}</td>`;
       elements.qualTableBody.appendChild(tr);
       return;
     }
 
     let tds = '';
-    row.cells.forEach((c, idx) => {
-      if (idx === 0) {
+    validColIndices.forEach((colIdx, displayIdx) => {
+      const c = (row.cells && row.cells[colIdx]) ? row.cells[colIdx].trim() : '';
+      if (displayIdx === 0 && !isNaN(parseInt(c, 10))) {
         // Rank column
         const rankNum = parseInt(c, 10);
         let badgeClass = 'plain';
@@ -903,10 +933,10 @@ function renderQualTable(tableData) {
         else if (rankNum === 2) badgeClass = 'silver';
         else if (rankNum === 3) badgeClass = 'bronze';
         tds += `<td><span class="rank-badge ${badgeClass}">${c || '-'}</span></td>`;
-      } else if (idx === 1) {
+      } else if (displayIdx === 1) {
         // Athlete name
         tds += `<td><strong style="color:var(--text-primary);">${escapeHtml(c)}</strong></td>`;
-      } else if (idx === row.cells.length - 3 || (idx === row.cells.length - 1 && !isNaN(parseInt(c, 10)) && parseInt(c, 10) > 100)) {
+      } else if (displayIdx === validColIndices.length - 3 || (displayIdx === validColIndices.length - 1 && !isNaN(parseInt(c, 10)) && parseInt(c, 10) > 100)) {
         // Total score
         tds += `<td><span class="score-total-pill">${escapeHtml(c)}</span></td>`;
       } else {
@@ -965,33 +995,68 @@ function selectEntriesCategory(path) {
 }
 
 function renderEntriesTable(tableData) {
-  let ths = '<tr>';
-  if (tableData.headers.length > 0) {
-    tableData.headers.forEach(h => {
-      ths += `<th>${escapeHtml(h)}</th>`;
-    });
-  } else {
-    ths += '<th>Athlete</th><th>Target</th><th>Category</th><th>Session</th>';
+  if (!tableData || !tableData.rows || tableData.rows.length === 0) {
+    elements.entriesTableHead.innerHTML = '';
+    elements.entriesTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted);">No entries found in this view.</td></tr>';
+    return;
   }
+
+  // Determine actual maximum columns across all rows
+  const maxCells = tableData.rows.reduce((max, r) => Math.max(max, r.cells ? r.cells.length : 0), 0);
+
+  // Find columns that actually have non-empty data in at least one row
+  const validColIndices = [];
+  for (let colIdx = 0; colIdx < maxCells; colIdx++) {
+    const hasData = tableData.rows.some(r => r.cells && r.cells[colIdx] && r.cells[colIdx].trim().length > 0);
+    if (hasData) {
+      validColIndices.push(colIdx);
+    }
+  }
+
+  if (validColIndices.length === 0) {
+    elements.entriesTableHead.innerHTML = '';
+    elements.entriesTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-muted);">No entries found.</td></tr>';
+    return;
+  }
+
+  // Clean pool of headers (strip full width banner titles)
+  const cleanHeadersPool = (tableData.headers || []).filter(h => 
+    h && !h.toLowerCase().includes('participant list') && !h.toLowerCase().includes('division')
+  );
+
+  const fallbackHeaders = ['Target', 'Athlete', 'Country / Club', 'Division / Event'];
+  const finalHeaders = validColIndices.map((colIdx, displayIdx) => {
+    return cleanHeadersPool[displayIdx] || (tableData.headers && tableData.headers[colIdx]) || fallbackHeaders[displayIdx] || `Column ${displayIdx + 1}`;
+  });
+
+  // Render headers
+  let ths = '<tr>';
+  finalHeaders.forEach(h => {
+    ths += `<th>${escapeHtml(h)}</th>`;
+  });
   ths += '</tr>';
   elements.entriesTableHead.innerHTML = ths;
 
+  // Render rows
   elements.entriesTableBody.innerHTML = '';
   tableData.rows.forEach(row => {
     const tr = document.createElement('tr');
-    if (row.category && row.cells.length <= 1) {
+
+    // Category divider row
+    if (row.category && (!row.cells || row.cells.length <= 1)) {
       tr.className = 'category-header-row';
-      tr.innerHTML = `<td colspan="${Math.max(tableData.headers.length, 4)}">${escapeHtml(row.category)}</td>`;
+      tr.innerHTML = `<td colspan="${finalHeaders.length}">${escapeHtml(row.category)}</td>`;
       elements.entriesTableBody.appendChild(tr);
       return;
     }
 
     let tds = '';
-    row.cells.forEach((c, idx) => {
-      if (idx === 0) {
-        tds += `<td><strong>${escapeHtml(c)}</strong></td>`;
-      } else if (idx === 1 && c.length <= 4) {
-        tds += `<td><span class="tour-code">${escapeHtml(c)}</span></td>`;
+    validColIndices.forEach((colIdx, displayIdx) => {
+      const c = (row.cells && row.cells[colIdx]) ? row.cells[colIdx].trim() : '';
+      if (displayIdx === 0 && c.length <= 4) {
+        tds += `<td><span class="tour-code">${escapeHtml(c || '-')}</span></td>`;
+      } else if (displayIdx === 1) {
+        tds += `<td><strong style="color:var(--text-primary);">${escapeHtml(c)}</strong></td>`;
       } else {
         tds += `<td>${escapeHtml(c)}</td>`;
       }

@@ -278,13 +278,7 @@ async function getEventData(toId, path) {
   $('table').each((tableIdx, tableEl) => {
     const $tbl = $(tableEl);
     
-    // Extract headers
-    let headers = [];
-    $tbl.find('tr.table100-head:last-child th, thead tr:last-child th, tr:first-child th').each((_, th) => {
-      const h = $(th).text().trim();
-      if (h) headers.push(h);
-    });
-
+    // 1. Collect data rows
     const rows = [];
     let currentCategory = '';
 
@@ -327,6 +321,60 @@ async function getEventData(toId, path) {
         rows.push(rowObj);
       }
     });
+
+    const maxCells = rows.reduce((max, r) => Math.max(max, r.cells ? r.cells.length : 0), 0);
+
+    // 2. Extract headers intelligently
+    let headers = [];
+    const headerRows = [];
+    $tbl.find('tr').each((_, tr) => {
+      const $tr = $(tr);
+      const ths = $tr.find('th');
+      if (ths.length > 0) {
+        const rowHeaders = [];
+        ths.each((_, th) => {
+          const $th = $(th);
+          const colspan = parseInt($th.attr('colspan') || '1', 10);
+          const h = $th.text().trim();
+          if (colspan >= 3 && ths.length === 1) return; // Skip full width table banner titles
+          if (h) rowHeaders.push(h);
+        });
+        if (rowHeaders.length > 0) {
+          headerRows.push(rowHeaders);
+        }
+      }
+    });
+
+    if (headerRows.length > 0) {
+      const matchingRow = headerRows.find(hr => hr.length === maxCells);
+      if (matchingRow) {
+        headers = matchingRow;
+      } else {
+        const largest = headerRows.reduce((prev, curr) => curr.length > prev.length ? curr : prev, []);
+        headers = largest.slice(0, maxCells > 0 ? maxCells : largest.length);
+      }
+    }
+
+    // 3. Strip any column where all row cells and header are empty
+    if (maxCells > 0) {
+      const validCols = [];
+      for (let j = 0; j < maxCells; j++) {
+        const headerHasContent = headers[j] && headers[j].trim().length > 0;
+        const rowHasContent = rows.some(r => r.cells && r.cells[j] && r.cells[j].trim().length > 0);
+        if (headerHasContent || rowHasContent) {
+          validCols.push(j);
+        }
+      }
+
+      if (validCols.length < maxCells || headers.length !== validCols.length) {
+        headers = validCols.map(j => headers[j] || '');
+        rows.forEach(r => {
+          if (r.cells) {
+            r.cells = validCols.map(j => r.cells[j] || '');
+          }
+        });
+      }
+    }
 
     if (rows.length > 0 || headers.length > 0) {
       tables.push({
