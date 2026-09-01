@@ -51,6 +51,8 @@ const elements = {
   
   // Results
   tournamentsHeading: document.getElementById('tournamentsHeading'),
+  sectionLiveBadge: document.getElementById('sectionLiveBadge'),
+  sectionLiveCount: document.getElementById('sectionLiveCount'),
   resultsCount: document.getElementById('resultsCount'),
   mainLoader: document.getElementById('mainLoader'),
   tournamentsGrid: document.getElementById('tournamentsGrid'),
@@ -410,6 +412,20 @@ function renderTournaments() {
   const startIndex = (state.currentPage - 1) * state.pageSize;
   const endIndex = Math.min(startIndex + state.pageSize, totalCount);
   const pagedList = list.slice(startIndex, endIndex);
+
+  // Update live count indicator on top left
+  const liveCount = state.comptime === '1'
+    ? list.length
+    : list.filter(t => t.isLiveToday).length;
+
+  if (elements.sectionLiveBadge && elements.sectionLiveCount) {
+    elements.sectionLiveCount.textContent = liveCount;
+    elements.sectionLiveBadge.style.display = liveCount > 0 ? 'inline-flex' : 'none';
+  }
+
+  if (elements.liveCountBadge) {
+    elements.liveCountBadge.textContent = liveCount;
+  }
 
   // Update count & page indicator
   if (totalCount > state.pageSize) {
