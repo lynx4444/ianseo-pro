@@ -297,6 +297,9 @@ async function loadTournaments() {
     });
 
     const res = await fetch(`/api/tournaments?${params.toString()}`);
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status} (${res.statusText})`);
+    }
     const data = await res.json();
 
     if (data.success) {
@@ -310,11 +313,11 @@ async function loadTournaments() {
       renderTournaments();
       updateFilterChips();
     } else {
-      showToast('Error loading competitions: ' + data.error);
+      showToast('Error loading competitions: ' + (data.error || 'Unknown error'));
     }
   } catch (err) {
     console.error('Failed to load tournaments:', err);
-    showToast('Network error while connecting to Ianseo scraper API');
+    showToast(`Connection failed: ${err.message}. Check if backend API is deployed & running.`);
   } finally {
     showLoader(false);
   }
@@ -536,17 +539,20 @@ async function openTournamentHub(tournament) {
     elements.modalSectionsAccordion.innerHTML = '';
 
     const res = await fetch(`/api/tournaments/${tournament.toId}`);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
     const data = await res.json();
 
     if (data.success) {
       state.activeTournamentDetails = data.details;
       renderTournamentDetails(data.details);
     } else {
-      showToast('Could not load tournament details: ' + data.error);
+      showToast('Could not load tournament details: ' + (data.error || 'Unknown error'));
     }
   } catch (err) {
     console.error('Error loading tournament details:', err);
-    showToast('Failed to load tournament details');
+    showToast('Failed to load tournament details: ' + err.message);
   }
 }
 

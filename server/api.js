@@ -164,6 +164,10 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`🏹 Ianseo Pro Scraper & Web App is running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🏹 Ianseo Pro Scraper & Web App is running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
