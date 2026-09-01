@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Ianseo Pro - Archery tournament results, live scores, rankings and brackets.">
+  <title>Ianseo Pro | Archery Tournament Hub</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-area" id="brandHomeBtn">
+        <div class="target-logo-icon">
+          <div class="ring blue"></div>
+          <div class="ring red"></div>
+          <div class="ring gold"></div>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">IANSEO<span>PRO</span></div>
+        </div>
+      </div>
+
+      <!-- Header Search -->
+      <div class="header-search">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="globalSearchInput" placeholder="Search tournaments, archers..." autocomplete="off">
+        <span class="search-shortcut">/</span>
+        <button id="clearSearchBtn" class="clear-search-btn" style="display:none;"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <button id="liveFilterBtn" class="live-status-pill" title="Live Competitions">
+          <span class="pulse-dot"></span>
+          <span class="live-label">LIVE</span>
+          <span id="liveCountBadge" class="live-count">0</span>
+        </button>
+
+        <button id="themeToggleBtn" class="btn-icon" title="Toggle Theme">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+
+    <!-- Filter & Toolbar Section -->
+    <section class="filter-section">
+      <div class="filter-wrapper">
+        <!-- Status Tabs -->
+        <div class="status-tabs" id="statusTabs">
+          <button class="status-tab active" data-time="">All</button>
+          <button class="status-tab live-tab" data-time="1">
+            <span class="pulse-dot"></span> Live
+          </button>
+          <button class="status-tab" data-time="3">Upcoming</button>
+          <button class="status-tab" data-time="2">Past</button>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="filter-controls">
+          <!-- Year Selector -->
+          <div class="control-group">
+            <label for="yearSelect"><i class="fa-solid fa-calendar"></i></label>
+            <select id="yearSelect" class="styled-select">
+              <option value="2027">2027</option>
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+            </select>
+          </div>
+
+          <!-- Country Selector -->
+          <div class="control-group">
+            <label for="countrySelect"><i class="fa-solid fa-globe"></i></label>
+            <select id="countrySelect" class="styled-select">
+              <option value="">All Countries</option>
+            </select>
+          </div>
+
+          <!-- View Switcher -->
+          <div class="view-switcher">
+            <button id="viewGridBtn" class="view-btn active" title="Grid"><i class="fa-solid fa-grip"></i></button>
+            <button id="viewTableBtn" class="view-btn" title="Table"><i class="fa-solid fa-list"></i></button>
+          </div>
+
+          <!-- Auto Refresh Toggle -->
+          <button id="autoRefreshBtn" class="btn-refresh" title="Auto-Sync">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Filters Bar -->
+      <div class="active-filters-bar" id="activeFiltersBar" style="display:none;">
+        <span class="filter-summary">Filters:</span>
+        <div id="filterChips" class="filter-chips"></div>
+        <button id="resetAllFiltersBtn" class="btn-text">Clear</button>
+      </div>
+    </section>
+
+    <!-- Tournaments Results Area -->
+    <section class="tournaments-section">
+      <div class="section-header">
+        <h2 class="section-title" id="tournamentsHeading">Tournaments</h2>
+        <div class="results-meta">
+          <span id="resultsCount">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Loader -->
+      <div id="mainLoader" class="loader-container">
+        <div class="target-spinner">
+          <div class="ring-spinner"></div>
+          <i class="fa-solid fa-crosshairs"></i>
+        </div>
+      </div>
+
+      <!-- Grid Container -->
+      <div id="tournamentsGrid" class="tournaments-grid" style="display:none;"></div>
+
+      <!-- Table Container -->
+      <div id="tournamentsTableWrapper" class="table-container" style="display:none;">
+        <table class="data-table" id="tournamentsTable">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Code</th>
+              <th>Tournament</th>
+              <th>Organizer</th>
+              <th>Location</th>
+              <th>Dates</th>
+              <th>Updated</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="tournamentsTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display:none;">
+        <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+        <h3>No Tournaments Found</h3>
+        <p>Try different filters.</p>
+        <button id="resetEmptyFiltersBtn" class="btn-primary">Reset</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Tournament Hub Modal (Full Detailed View) -->
+  <div id="tournamentModal" class="modal-overlay" style="display:none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <div class="modal-code-badge" id="modalTournamentCode">SUKIPT26</div>
+          <h2 class="modal-tournament-title" id="modalTournamentTitle">Tournament Name</h2>
+          <div class="modal-tournament-meta" id="modalTournamentMeta">Organizer • Location • Dates</div>
+        </div>
+        <button class="modal-close-btn" id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Modal Nav Tabs -->
+      <div class="modal-tabs" id="modalTabs">
+        <button class="modal-tab active" data-tab="overview"><i class="fa-solid fa-file-lines"></i> Overview</button>
+        <button class="modal-tab" data-tab="qualifications"><i class="fa-solid fa-bullseye"></i> Qualifications</button>
+        <button class="modal-tab" data-tab="entries"><i class="fa-solid fa-users"></i> Roster</button>
+        <button class="modal-tab" data-tab="export"><i class="fa-solid fa-file-export"></i> Export</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body" id="modalBody">
+        <!-- Overview & Documents Tab -->
+        <div id="tabOverview" class="tab-pane active">
+          <div class="tournament-hero-card">
+            <div class="hero-badges-row">
+              <span id="modalLiveBadge" class="status-chip live" style="display:none;"><i class="fa-solid fa-circle pulse-dot"></i> Live</span>
+              <span id="modalDateChip" class="status-chip"><i class="fa-solid fa-calendar"></i> 1-5 Sep 2026</span>
+              <span id="modalLocationChip" class="status-chip"><i class="fa-solid fa-location-dot"></i> Universiti Malaya</span>
+            </div>
+          </div>
+
+          <!-- Official Documents Grid -->
+          <div class="sub-section">
+            <h3 class="sub-section-title"><i class="fa-solid fa-file-lines"></i> Documents</h3>
+            <div class="docs-grid" id="modalDocsGrid"></div>
+          </div>
+
+          <!-- Other Available Result Pages -->
+          <div class="sub-section">
+            <h3 class="sub-section-title"><i class="fa-solid fa-list-check"></i> Results & Brackets</h3>
+            <div class="sections-accordion" id="modalSectionsAccordion"></div>
+          </div>
+        </div>
+
+        <!-- Qualifications Tab -->
+        <div id="tabQualifications" class="tab-pane">
+          <div class="pane-toolbar">
+            <div class="category-selector-group">
+              <label for="qualCategorySelect"><i class="fa-solid fa-layer-group"></i> Division:</label>
+              <select id="qualCategorySelect" class="styled-select"></select>
+            </div>
+            <div class="search-mini">
+              <i class="fa-solid fa-search"></i>
+              <input type="text" id="qualSearchInput" placeholder="Filter...">
+            </div>
+          </div>
+
+          <!-- Qual Table Loader -->
+          <div id="qualLoader" class="loader-container mini" style="display:none;">
+            <div class="ring-spinner"></div>
+          </div>
+
+          <!-- Qual Table Content -->
+          <div id="qualTableContainer" class="table-container">
+            <table class="data-table scores-table" id="qualTable">
+              <thead id="qualTableHead"></thead>
+              <tbody id="qualTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Participant Entries Tab -->
+        <div id="tabEntries" class="tab-pane">
+          <div class="pane-toolbar">
+            <div class="category-selector-group">
+              <label for="entriesCategorySelect"><i class="fa-solid fa-list-ol"></i> View:</label>
+              <select id="entriesCategorySelect" class="styled-select"></select>
+            </div>
+            <div class="search-mini">
+              <i class="fa-solid fa-search"></i>
+              <input type="text" id="entriesSearchInput" placeholder="Filter...">
+            </div>
+          </div>
+
+          <!-- Entries Table Loader -->
+          <div id="entriesLoader" class="loader-container mini" style="display:none;">
+            <div class="ring-spinner"></div>
+          </div>
+
+          <!-- Entries Content -->
+          <div id="entriesTableContainer" class="table-container">
+            <table class="data-table" id="entriesTable">
+              <thead id="entriesTableHead"></thead>
+              <tbody id="entriesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Export Hub Tab -->
+        <div id="tabExport" class="tab-pane">
+          <div class="export-hub-container">
+            <div class="export-card">
+              <div class="export-icon"><i class="fa-solid fa-file-code"></i></div>
+              <div class="export-info">
+                <h4>JSON Data</h4>
+                <p>Clean structured tournament metadata.</p>
+              </div>
+              <button id="downloadJsonBtn" class="btn-primary"><i class="fa-solid fa-download"></i> JSON</button>
+            </div>
+
+            <div class="export-card">
+              <div class="export-icon"><i class="fa-solid fa-file-csv"></i></div>
+              <div class="export-info">
+                <h4>CSV Spreadsheet</h4>
+                <p>Export qualification or participant roster.</p>
+              </div>
+              <button id="downloadCsvBtn" class="btn-secondary"><i class="fa-solid fa-file-excel"></i> CSV</button>
+            </div>
+
+            <div class="export-card">
+              <div class="export-icon"><i class="fa-solid fa-terminal"></i></div>
+              <div class="export-info">
+                <h4>CLI & API</h4>
+                <p>Headless scraper & REST API access.</p>
+              </div>
+              <button id="copyCliCommandBtn" class="btn-outline"><i class="fa-solid fa-copy"></i> Copy CLI</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-App PDF Viewer Modal -->
+  <div id="pdfModal" class="modal-overlay" style="display:none;">
+    <div class="modal-container pdf-modal-container">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <h3 class="modal-tournament-title" id="pdfModalTitle">Document Viewer</h3>
+        </div>
+        <div class="pdf-modal-actions">
+          <a id="pdfDownloadDirectBtn" href="#" target="_blank" class="btn-secondary" download><i class="fa-solid fa-download"></i> Save PDF</a>
+          <button class="modal-close-btn" id="closePdfModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+      <div class="pdf-modal-body">
+        <iframe id="pdfIframe" src="" frameborder="0" width="100%" height="100%"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="footer-brand">IANSEO<span>PRO</span></div>
+      </div>
+      <div class="footer-right">
+        <div class="footer-links">
+          <a href="https://www.ianseo.net" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ianseo.net</a>
+          <a href="/api/tournaments" target="_blank"><i class="fa-solid fa-code"></i> API</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
