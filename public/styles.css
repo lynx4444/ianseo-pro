@@ -1806,3 +1806,548 @@ a:hover {
     box-sizing: border-box;
   }
 }
+
+/* ==========================================================================
+   FINALS & BRACKETS STYLING
+   ========================================================================== */
+
+.bracket-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.bracket-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.bracket-view-switcher {
+  display: inline-flex;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.bracket-view-switcher .view-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease;
+}
+
+.bracket-view-switcher .view-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.bracket-view-switcher .view-btn.active {
+  background: var(--target-gold);
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.bracket-zoom-controls {
+  display: inline-flex;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+  align-items: center;
+}
+
+.zoom-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  transition: all 0.15s ease;
+}
+
+.zoom-btn.text {
+  width: auto;
+  padding: 0 0.45rem;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.zoom-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.bracket-pdf-btn {
+  font-size: 0.78rem;
+  padding: 0.35rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+}
+
+/* Bracket Tree Container & Pan Canvas */
+.bracket-tree-wrapper {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  min-height: 480px;
+  max-height: 72vh;
+  overflow: auto;
+  position: relative;
+  scrollbar-width: thin;
+  cursor: grab;
+}
+
+.bracket-tree-wrapper.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.bracket-tree-canvas {
+  transform-origin: 0 0;
+  transition: transform 0.12s ease-out;
+  display: inline-block;
+  min-width: 100%;
+}
+
+/* Authentic IanSeo .table-grid Styles Re-imagined */
+.bracket-tree-canvas .table-grid {
+  border-spacing: 0;
+  border-collapse: collapse;
+  empty-cells: show;
+  background-color: transparent !important;
+  border-radius: 0;
+  margin: 0 auto;
+}
+
+.bracket-tree-canvas .table-grid tr:hover {
+  background-color: transparent !important;
+}
+
+.bracket-tree-canvas .table-grid tbody th {
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.bracket-tree-canvas .table-grid tbody td {
+  padding: 3px 5px;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+/* Round Header Badges (.title) */
+.bracket-tree-canvas .title {
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #0284c7, #0369a1) !important;
+  color: #ffffff !important;
+  margin: 0 0 0.35rem 0 !important;
+  padding: 0.45rem 1.25rem !important;
+  border-radius: 6px !important;
+  white-space: nowrap !important;
+  width: auto !important;
+  text-align: center !important;
+  font-size: 0.85rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+}
+
+/* High-Contrast Connecting Lines */
+.bracket-tree-canvas .c { border: 1.5px solid var(--target-blue, #0284c7) !important; }
+.bracket-tree-canvas .t { border-top: 1.5px solid var(--target-blue, #0284c7) !important; }
+.bracket-tree-canvas .r { border-right: 1.5px solid var(--target-blue, #0284c7) !important; }
+.bracket-tree-canvas .l { border-left: 1.5px solid var(--target-blue, #0284c7) !important; }
+.bracket-tree-canvas .b { border-bottom: 1.5px solid var(--target-blue, #0284c7) !important; }
+.bracket-tree-canvas .w { color: var(--target-blue, #38bdf8) !important; font-weight: 600; }
+
+/* Archer Card Cells */
+.bracket-tree-canvas .data-cell {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  font-weight: 500;
+  text-align: left !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.bracket-tree-canvas .data-cell:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* Set Points Table */
+.bracket-tree-canvas .set-points-container {
+  vertical-align: middle;
+}
+
+.bracket-tree-canvas .table-set-points {
+  border-radius: 0;
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+
+.bracket-tree-canvas .table-set-points tbody tr {
+  height: auto;
+}
+
+.bracket-tree-canvas .table-grid tbody td .td-set-points {
+  font-size: 11px !important;
+  border: 1px solid var(--border-color) !important;
+  background: rgba(15, 23, 42, 0.55) !important;
+  color: var(--text-secondary) !important;
+  text-align: center !important;
+  padding: 1px 4px !important;
+  min-width: 22px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+}
+
+/* Highlighted Match Winner Cells */
+.bracket-tree-canvas td.winner-cell {
+  background-color: rgba(34, 197, 94, 0.18) !important;
+  color: #22c55e !important;
+  font-weight: 700 !important;
+}
+
+/* Match Cards View */
+.bracket-cards-wrapper {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.bracket-rounds-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  min-width: max-content;
+}
+
+.bracket-round-col {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.bracket-round-header {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--target-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bracket-round-header .match-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.bracket-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.bracket-card:hover {
+  border-color: var(--target-blue);
+  transform: translateY(-1px);
+}
+
+.bracket-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.35rem;
+}
+
+.bracket-card-combatant {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  gap: 0.5rem;
+}
+
+.bracket-card-combatant.is-winner {
+  background: rgba(34, 197, 94, 0.12);
+  font-weight: 700;
+}
+
+.combatant-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seed-tag {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 18px;
+  text-align: right;
+}
+
+.combatant-name {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.club-code-tag {
+  font-size: 0.68rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.combatant-score {
+  font-size: 0.88rem;
+  font-weight: 700;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.bracket-card-combatant.is-winner .combatant-score {
+  background: var(--target-green);
+  color: #ffffff;
+}
+
+.bracket-card-sets {
+  display: flex;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+  border-top: 1px dashed var(--border-color);
+}
+
+.set-pill {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* Standings Podium View */
+.bracket-standings-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.bracket-podium-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.podium-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 180px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.podium-card.gold {
+  border-color: #eab308;
+  box-shadow: 0 4px 16px rgba(234, 179, 8, 0.25);
+  transform: scale(1.05);
+  order: 2;
+}
+
+.podium-card.silver {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px rgba(148, 163, 184, 0.2);
+  order: 1;
+}
+
+.podium-card.bronze {
+  border-color: #d97706;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+  order: 3;
+}
+
+.podium-icon {
+  font-size: 2rem;
+}
+
+.podium-rank {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.podium-card.gold .podium-rank { color: #eab308; }
+.podium-card.silver .podium-rank { color: #94a3b8; }
+.podium-card.bronze .podium-rank { color: #d97706; }
+
+.podium-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.podium-club {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Empty State */
+.bracket-empty-state {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bracket-empty-state i {
+  font-size: 3rem;
+  color: var(--border-color);
+}
+
+.bracket-empty-state h4 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.bracket-empty-state p {
+  font-size: 0.85rem;
+  max-width: 400px;
+  margin: 0;
+}
+
+/* Fullscreen Modal Override */
+.modal-container.fullscreen-bracket {
+  width: 98vw !important;
+  max-width: 98vw !important;
+  height: 98vh !important;
+  max-height: 98vh !important;
+}
+
+.modal-container.fullscreen-bracket .bracket-tree-wrapper {
+  max-height: 80vh !important;
+}
+
+/* Accordion bracket pill styling */
+.accordion-link-pill.bracket-pill {
+  border-color: rgba(2, 132, 199, 0.4);
+  background: rgba(2, 132, 199, 0.06);
+}
+
+.accordion-link-pill.bracket-pill:hover {
+  border-color: var(--target-blue);
+  background: rgba(2, 132, 199, 0.15);
+}
+
+.accordion-link-pill.bracket-pill i {
+  color: var(--target-blue);
+}
+
+@media (max-width: 768px) {
+  .bracket-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bracket-controls-group {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .bracket-tree-wrapper {
+    padding: 0.75rem;
+  }
+  .bracket-podium-row {
+    flex-direction: column;
+    align-items: center;
+  }
+  .podium-card.gold {
+    order: 1;
+    transform: none;
+    width: 100%;
+  }
+  .podium-card.silver {
+    order: 2;
+    width: 100%;
+  }
+  .podium-card.bronze {
+    order: 3;
+    width: 100%;
+  }
+}
+

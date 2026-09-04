@@ -19,7 +19,11 @@ const state = {
   autoRefreshInterval: null,
   isAutoRefreshActive: false,
   simArrows: [],
-  simMaxArrows: 6
+  simMaxArrows: 6,
+  bracketZoom: 1,
+  bracketViewMode: 'tree', // 'tree' | 'cards' | 'standings'
+  currentBracketData: null,
+  currentBracketPath: ''
 };
 
 // DOM Elements
@@ -80,6 +84,31 @@ const elements = {
   qualLoader: document.getElementById('qualLoader'),
   qualTableHead: document.getElementById('qualTableHead'),
   qualTableBody: document.getElementById('qualTableBody'),
+  
+  // Brackets Tab
+  modalTabBrackets: document.getElementById('modalTabBrackets'),
+  bracketCategorySelect: document.getElementById('bracketCategorySelect'),
+  bracketViewSwitcher: document.getElementById('bracketViewSwitcher'),
+  bracketViewTreeBtn: document.getElementById('bracketViewTreeBtn'),
+  bracketViewCardsBtn: document.getElementById('bracketViewCardsBtn'),
+  bracketViewStandingsBtn: document.getElementById('bracketViewStandingsBtn'),
+  bracketZoomControls: document.getElementById('bracketZoomControls'),
+  bracketZoomOutBtn: document.getElementById('bracketZoomOutBtn'),
+  bracketZoomResetBtn: document.getElementById('bracketZoomResetBtn'),
+  bracketZoomInBtn: document.getElementById('bracketZoomInBtn'),
+  bracketFullscreenBtn: document.getElementById('bracketFullscreenBtn'),
+  bracketPdfBtn: document.getElementById('bracketPdfBtn'),
+  bracketLoader: document.getElementById('bracketLoader'),
+  bracketEmptyState: document.getElementById('bracketEmptyState'),
+  bracketTreeWrapper: document.getElementById('bracketTreeWrapper'),
+  bracketTreeCanvas: document.getElementById('bracketTreeCanvas'),
+  bracketCardsWrapper: document.getElementById('bracketCardsWrapper'),
+  bracketRoundsRow: document.getElementById('bracketRoundsRow'),
+  bracketStandingsWrapper: document.getElementById('bracketStandingsWrapper'),
+  bracketPodiumRow: document.getElementById('bracketPodiumRow'),
+  bracketStandingsTable: document.getElementById('bracketStandingsTable'),
+  bracketStandingsHead: document.getElementById('bracketStandingsHead'),
+  bracketStandingsBody: document.getElementById('bracketStandingsBody'),
   
   // Entries Tab
   entriesCategorySelect: document.getElementById('entriesCategorySelect'),
@@ -261,6 +290,50 @@ function setupEventListeners() {
 
   // Qual archer search
   elements.qualSearchInput.addEventListener('input', filterQualRows);
+
+  // Finals & Brackets Category change
+  if (elements.bracketCategorySelect) {
+    elements.bracketCategorySelect.addEventListener('change', (e) => {
+      loadBracketCategoryData(e.target.value);
+    });
+  }
+
+  // Bracket View Switcher buttons
+  if (elements.bracketViewTreeBtn) {
+    elements.bracketViewTreeBtn.addEventListener('click', () => setBracketViewMode('tree'));
+  }
+  if (elements.bracketViewCardsBtn) {
+    elements.bracketViewCardsBtn.addEventListener('click', () => setBracketViewMode('cards'));
+  }
+  if (elements.bracketViewStandingsBtn) {
+    elements.bracketViewStandingsBtn.addEventListener('click', () => setBracketViewMode('standings'));
+  }
+
+  // Bracket Zoom buttons
+  if (elements.bracketZoomInBtn) {
+    elements.bracketZoomInBtn.addEventListener('click', () => {
+      state.bracketZoom = Math.min(2.0, +(state.bracketZoom + 0.15).toFixed(2));
+      updateBracketTransform();
+    });
+  }
+  if (elements.bracketZoomOutBtn) {
+    elements.bracketZoomOutBtn.addEventListener('click', () => {
+      state.bracketZoom = Math.max(0.4, +(state.bracketZoom - 0.15).toFixed(2));
+      updateBracketTransform();
+    });
+  }
+  if (elements.bracketZoomResetBtn) {
+    elements.bracketZoomResetBtn.addEventListener('click', () => {
+      state.bracketZoom = 1;
+      updateBracketTransform();
+    });
+  }
+  if (elements.bracketFullscreenBtn) {
+    elements.bracketFullscreenBtn.addEventListener('click', toggleBracketFullscreen);
+  }
+
+  // Bracket Pan and Wheel Zoom
+  setupBracketPan();
 
   // Entries View change
   elements.entriesCategorySelect.addEventListener('change', (e) => {
@@ -693,16 +766,22 @@ function renderTournamentDetails(details) {
   elements.modalDocsGrid.innerHTML = '';
   const documents = [];
   const qualifications = [];
+  const brackets = [];
   const entries = [];
   const otherSections = [];
 
   details.sections.forEach(sec => {
     sec.items.forEach(item => {
+      const p = (item.path || '').toLowerCase();
+      const isBracketLike = item.category === 'bracket' || item.isBracketTree || item.isFinalStanding || p.includes('/ib') || p.includes('/tb') || p.includes('/if') || p.includes('/tf');
+
       if (item.category === 'document' || (item.pdfUrl && !item.webUrl)) {
         documents.push(item);
-      } else if (item.category === 'qualification') {
+      } else if (isBracketLike) {
+        brackets.push(item);
+      } else if (item.category === 'qualification' || p.includes('/iq') || p.includes('/tq')) {
         qualifications.push(item);
-      } else if (item.category === 'entries') {
+      } else if (item.category === 'entries' || p.includes('/en') || p.includes('/st')) {
         entries.push(item);
       } else {
         otherSections.push(item);
@@ -753,11 +832,24 @@ function renderTournamentDetails(details) {
     sec.items.forEach(item => {
       const pill = document.createElement('div');
       pill.className = 'accordion-link-pill';
-      const icon = item.pdfUrl ? 'fa-file-pdf' : 'fa-arrow-up-right-from-square';
+      
+      const p = (item.path || '').toLowerCase();
+      const isBracketItem = item.category === 'bracket' || item.isBracketTree || item.isFinalStanding || p.includes('/ib') || p.includes('/tb') || p.includes('/if') || p.includes('/tf');
+      if (isBracketItem) pill.classList.add('bracket-pill');
+
+      let icon = 'fa-arrow-up-right-from-square';
+      if (item.pdfUrl && !item.webUrl) icon = 'fa-file-pdf';
+      else if (isBracketItem) icon = item.isFinalStanding ? 'fa-medal' : 'fa-sitemap';
+      else if (item.category === 'qualification') icon = 'fa-bullseye';
+      else if (item.category === 'entries') icon = 'fa-users';
+
       pill.innerHTML = `<i class="fa-solid ${icon}"></i> ${escapeHtml(item.text)}`;
 
       pill.addEventListener('click', () => {
-        if (item.category === 'qualification') {
+        if (isBracketItem) {
+          switchModalTab('brackets');
+          selectBracketCategory(item.path || item.webUrl);
+        } else if (item.category === 'qualification') {
           switchModalTab('qualifications');
           selectQualificationCategory(item.path || item.webUrl);
         } else if (item.category === 'entries') {
@@ -795,6 +887,64 @@ function renderTournamentDetails(details) {
     elements.qualCategorySelect.innerHTML = '<option value="">No Qualification tables found</option>';
     elements.qualTableHead.innerHTML = '';
     elements.qualTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text-muted);">No qualification rounds published yet for this event.</td></tr>';
+  }
+
+  // Populate Finals & Brackets Select
+  if (elements.bracketCategorySelect) {
+    elements.bracketCategorySelect.innerHTML = '';
+    const seenPaths = new Set();
+    const uniqueBrackets = [];
+    brackets.forEach(b => {
+      const key = b.path || b.webUrl;
+      if (key && !seenPaths.has(key)) {
+        seenPaths.add(key);
+        uniqueBrackets.push(b);
+      }
+    });
+
+    if (uniqueBrackets.length > 0) {
+      if (elements.modalTabBrackets) {
+        elements.modalTabBrackets.style.display = 'inline-flex';
+      }
+
+      const treeGroup = document.createElement('optgroup');
+      treeGroup.label = '🏹 Elimination Brackets';
+      const standingsGroup = document.createElement('optgroup');
+      standingsGroup.label = '🏅 Final Standings & Medals';
+
+      let defaultPath = '';
+      uniqueBrackets.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.path || b.webUrl;
+        const p = (b.path || '').toLowerCase();
+        const isTree = b.isBracketTree || p.includes('/ib') || p.includes('/tb');
+        opt.textContent = isTree ? `${b.text} (Bracket Tree)` : `${b.text} (Final Standing)`;
+        if (b.pdfUrl) opt.setAttribute('data-pdf', b.pdfUrl);
+
+        if (isTree) {
+          treeGroup.appendChild(opt);
+          if (!defaultPath) defaultPath = opt.value;
+        } else {
+          standingsGroup.appendChild(opt);
+          if (!defaultPath) defaultPath = opt.value;
+        }
+      });
+
+      if (treeGroup.children.length > 0) elements.bracketCategorySelect.appendChild(treeGroup);
+      if (standingsGroup.children.length > 0) elements.bracketCategorySelect.appendChild(standingsGroup);
+
+      if (defaultPath) {
+        elements.bracketCategorySelect.value = defaultPath;
+        loadBracketCategoryData(defaultPath);
+      }
+    } else {
+      elements.bracketCategorySelect.innerHTML = '<option value="">No brackets published yet</option>';
+      if (elements.bracketTreeCanvas) elements.bracketTreeCanvas.innerHTML = '';
+      if (elements.bracketEmptyState) elements.bracketEmptyState.style.display = 'flex';
+      if (elements.bracketTreeWrapper) elements.bracketTreeWrapper.style.display = 'none';
+      if (elements.bracketCardsWrapper) elements.bracketCardsWrapper.style.display = 'none';
+      if (elements.bracketStandingsWrapper) elements.bracketStandingsWrapper.style.display = 'none';
+    }
   }
 
   // Populate Entries Select
@@ -849,6 +999,448 @@ function selectQualificationCategory(path) {
       break;
     }
   }
+}
+
+/**
+ * Load Bracket Category Data
+ */
+async function loadBracketCategoryData(path) {
+  if (!path || !state.activeTournament) return;
+  state.currentBracketPath = path;
+  state.bracketZoom = 1;
+  updateBracketTransform();
+
+  if (elements.bracketLoader) elements.bracketLoader.style.display = 'flex';
+  if (elements.bracketEmptyState) elements.bracketEmptyState.style.display = 'none';
+  if (elements.bracketTreeCanvas) elements.bracketTreeCanvas.innerHTML = '';
+  if (elements.bracketRoundsRow) elements.bracketRoundsRow.innerHTML = '';
+  if (elements.bracketPodiumRow) elements.bracketPodiumRow.innerHTML = '';
+  if (elements.bracketStandingsHead) elements.bracketStandingsHead.innerHTML = '';
+  if (elements.bracketStandingsBody) elements.bracketStandingsBody.innerHTML = '';
+
+  // Check if option has direct PDF
+  const selectedOpt = elements.bracketCategorySelect ? elements.bracketCategorySelect.selectedOptions[0] : null;
+  const pdfUrl = selectedOpt ? selectedOpt.getAttribute('data-pdf') : null;
+  if (pdfUrl && elements.bracketPdfBtn) {
+    elements.bracketPdfBtn.href = pdfUrl;
+    elements.bracketPdfBtn.style.display = 'inline-flex';
+  } else if (elements.bracketPdfBtn) {
+    elements.bracketPdfBtn.style.display = 'none';
+  }
+
+  try {
+    const res = await fetch(`/api/tournaments/${state.activeTournament.toId}/data?path=${encodeURIComponent(path)}`);
+    const json = await res.json();
+
+    if (json.success && json.data) {
+      state.currentBracketData = json.data;
+      renderBracketView(json.data);
+    } else {
+      showBracketError('Failed to load bracket data.');
+    }
+  } catch (err) {
+    console.error('Error loading bracket data:', err);
+    showBracketError('Failed to fetch bracket data from tournament server.');
+  } finally {
+    if (elements.bracketLoader) elements.bracketLoader.style.display = 'none';
+  }
+}
+
+function showBracketError(msg) {
+  if (elements.bracketEmptyState) {
+    elements.bracketEmptyState.style.display = 'flex';
+    const h4 = elements.bracketEmptyState.querySelector('h4');
+    const p = elements.bracketEmptyState.querySelector('p');
+    if (h4) h4.textContent = 'Bracket Unavailable';
+    if (p) p.textContent = msg;
+  }
+  if (elements.bracketTreeWrapper) elements.bracketTreeWrapper.style.display = 'none';
+  if (elements.bracketCardsWrapper) elements.bracketCardsWrapper.style.display = 'none';
+  if (elements.bracketStandingsWrapper) elements.bracketStandingsWrapper.style.display = 'none';
+}
+
+function selectBracketCategory(path) {
+  if (!elements.bracketCategorySelect) return;
+  for (let i = 0; i < elements.bracketCategorySelect.options.length; i++) {
+    if (elements.bracketCategorySelect.options[i].value === path) {
+      elements.bracketCategorySelect.selectedIndex = i;
+      loadBracketCategoryData(path);
+      break;
+    }
+  }
+}
+
+function setBracketViewMode(mode) {
+  state.bracketViewMode = mode;
+  if (elements.bracketViewTreeBtn) elements.bracketViewTreeBtn.classList.toggle('active', mode === 'tree');
+  if (elements.bracketViewCardsBtn) elements.bracketViewCardsBtn.classList.toggle('active', mode === 'cards');
+  if (elements.bracketViewStandingsBtn) elements.bracketViewStandingsBtn.classList.toggle('active', mode === 'standings');
+
+  if (elements.bracketTreeWrapper) elements.bracketTreeWrapper.style.display = mode === 'tree' ? 'block' : 'none';
+  if (elements.bracketZoomControls) elements.bracketZoomControls.style.display = mode === 'tree' ? 'inline-flex' : 'none';
+  if (elements.bracketCardsWrapper) elements.bracketCardsWrapper.style.display = mode === 'cards' ? 'block' : 'none';
+  if (elements.bracketStandingsWrapper) elements.bracketStandingsWrapper.style.display = mode === 'standings' ? 'flex' : 'none';
+}
+
+function renderBracketView(data) {
+  if (!data) return;
+
+  if (data.isBracket && data.bracketData && data.bracketData.bracketHtml) {
+    if (elements.bracketEmptyState) elements.bracketEmptyState.style.display = 'none';
+    if (elements.bracketViewTreeBtn) elements.bracketViewTreeBtn.style.display = 'inline-flex';
+    if (elements.bracketViewCardsBtn) elements.bracketViewCardsBtn.style.display = 'inline-flex';
+    if (elements.bracketViewStandingsBtn) elements.bracketViewStandingsBtn.style.display = 'none';
+
+    if (state.bracketViewMode === 'standings') state.bracketViewMode = 'tree';
+    setBracketViewMode(state.bracketViewMode);
+
+    // Render Tree View
+    renderBracketTree(data.bracketData.bracketHtml, data.bracketData.rounds);
+
+    // Render Cards View
+    renderBracketCards(data.bracketData.bracketHtml, data.bracketData.rounds);
+  } else if (data.tables && data.tables.length > 0) {
+    // Final Standings / Ranking Table (/IF... or /TF...)
+    if (elements.bracketEmptyState) elements.bracketEmptyState.style.display = 'none';
+    if (elements.bracketViewTreeBtn) elements.bracketViewTreeBtn.style.display = 'none';
+    if (elements.bracketViewCardsBtn) elements.bracketViewCardsBtn.style.display = 'none';
+    if (elements.bracketViewStandingsBtn) elements.bracketViewStandingsBtn.style.display = 'inline-flex';
+    setBracketViewMode('standings');
+
+    renderBracketStandings(data.tables[0], data.pageTitle);
+  } else {
+    showBracketError('No bracket tree or standings table found in this round.');
+  }
+}
+
+function renderBracketTree(bracketHtml, rounds) {
+  if (!elements.bracketTreeCanvas) return;
+  elements.bracketTreeCanvas.innerHTML = bracketHtml;
+  
+  // Highlight winner scores in the tree
+  const table = elements.bracketTreeCanvas.querySelector('.table-grid');
+  if (table) {
+    table.querySelectorAll('tr').forEach(tr => {
+      const dataCells = tr.querySelectorAll('td.data-cell');
+      dataCells.forEach(td => {
+        const txt = td.textContent.trim();
+        if (/^[0-9]+(\*)?$/.test(txt)) {
+          const num = parseInt(txt, 10);
+          if (num >= 6) {
+            td.classList.add('winner-cell');
+          }
+        }
+      });
+    });
+  }
+
+  state.bracketZoom = 1;
+  updateBracketTransform();
+}
+
+function renderBracketCards(bracketHtml, rounds) {
+  if (!elements.bracketRoundsRow) return;
+  elements.bracketRoundsRow.innerHTML = '';
+  
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(bracketHtml, 'text/html');
+
+  const detectedRounds = (rounds && rounds.length > 0) ? rounds : ['1/8', '1/4', '1/2', 'Finals'];
+
+  // Collect all data rows
+  const rows = [];
+  doc.querySelectorAll('tr').forEach((tr, rIdx) => {
+    const cells = tr.querySelectorAll('td.data-cell');
+    const setCell = tr.querySelector('td.set-points-container');
+    if (cells.length > 0) {
+      const texts = Array.from(cells).map(c => c.textContent.trim()).filter(Boolean);
+      let sets = [];
+      if (setCell) {
+        setCell.querySelectorAll('tr').forEach(str => {
+          const vals = Array.from(str.querySelectorAll('td')).map(std => std.textContent.trim());
+          if (vals.length > 0) sets.push(vals.join(' - '));
+        });
+      }
+      rows.push({ rIdx, texts, sets });
+    }
+  });
+
+  // Extract round 1 matches
+  const round1Matches = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (r.texts.length >= 4 && /^[0-9]+$/.test(r.texts[0])) {
+      const archer1 = {
+        seed: r.texts[0],
+        name: r.texts[1],
+        clubCode: r.texts[2] || '',
+        clubName: r.texts[3] || '',
+        score: parseInt(r.texts[4] || '0', 10),
+        rawScore: r.texts[4] || '0',
+        sets: (r.sets && r.sets[0]) ? r.sets[0] : ''
+      };
+
+      if (i + 1 < rows.length && rows[i + 1].texts.length >= 4 && /^[0-9]+$/.test(rows[i + 1].texts[0])) {
+        const r2 = rows[i + 1];
+        const archer2 = {
+          seed: r2.texts[0],
+          name: r2.texts[1],
+          clubCode: r2.texts[2] || '',
+          clubName: r2.texts[3] || '',
+          score: parseInt(r2.texts[4] || '0', 10),
+          rawScore: r2.texts[4] || '0',
+          sets: (r.sets && r.sets[1]) ? r.sets[1] : (r2.sets[0] || '')
+        };
+        archer1.isWinner = archer1.score > archer2.score;
+        archer2.isWinner = archer2.score > archer1.score;
+        round1Matches.push({ archer1, archer2 });
+        i++;
+      }
+    }
+  }
+
+  // Render each round column
+  detectedRounds.forEach((roundTitle, rIndex) => {
+    const col = document.createElement('div');
+    col.className = 'bracket-round-col';
+
+    const header = document.createElement('div');
+    header.className = 'bracket-round-header';
+    let icon = 'fa-flag';
+    if (roundTitle.toLowerCase().includes('final')) icon = 'fa-trophy';
+    else if (roundTitle.includes('1/2')) icon = 'fa-medal';
+    header.innerHTML = `<span><i class="fa-solid ${icon}" style="margin-right:6px;"></i> ${escapeHtml(roundTitle)}</span>`;
+    col.appendChild(header);
+
+    if (rIndex === 0 && round1Matches.length > 0) {
+      header.innerHTML += `<span class="match-count">${round1Matches.length} matches</span>`;
+      round1Matches.forEach((m, mIdx) => {
+        col.appendChild(createMatchCard(m, `Match ${mIdx + 1}`));
+      });
+    } else {
+      // Find matches for later rounds from remaining rows
+      const laterMatches = [];
+      rows.forEach(r => {
+        if (r.texts.length === 2 && !/^[0-9]+$/.test(r.texts[0])) {
+          laterMatches.push({ name: r.texts[0], score: parseInt(r.texts[1] || '0', 10), rawScore: r.texts[1] || '0', sets: r.sets });
+        }
+      });
+
+      const pairs = [];
+      for (let p = 0; p < laterMatches.length; p += 2) {
+        if (laterMatches[p + 1]) {
+          const a1 = laterMatches[p];
+          const a2 = laterMatches[p + 1];
+          a1.isWinner = a1.score > a2.score;
+          a2.isWinner = a2.score > a1.score;
+          pairs.push({ archer1: a1, archer2: a2 });
+        }
+      }
+
+      if (pairs.length > 0) {
+        header.innerHTML += `<span class="match-count">${pairs.length} matches</span>`;
+        pairs.forEach((m, mIdx) => {
+          let label = `Match ${mIdx + 1}`;
+          if (roundTitle.toLowerCase().includes('final')) {
+            label = mIdx === 0 ? '🥇 Gold Medal Match' : '🥉 Bronze Medal Match';
+          }
+          col.appendChild(createMatchCard(m, label));
+        });
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'bracket-card';
+        placeholder.style.color = 'var(--text-muted)';
+        placeholder.style.fontSize = '0.78rem';
+        placeholder.style.textAlign = 'center';
+        placeholder.style.padding = '1.25rem 0.5rem';
+        placeholder.textContent = 'See Tree view for progression';
+        col.appendChild(placeholder);
+      }
+    }
+
+    elements.bracketRoundsRow.appendChild(col);
+  });
+}
+
+function createMatchCard(match, title) {
+  const card = document.createElement('div');
+  card.className = 'bracket-card';
+
+  const a1 = match.archer1;
+  const a2 = match.archer2;
+
+  card.innerHTML = `
+    <div class="bracket-card-header">
+      <span>${escapeHtml(title)}</span>
+      ${a1.isWinner || a2.isWinner ? '<span style="color:var(--target-green);"><i class="fa-solid fa-check"></i> Final</span>' : ''}
+    </div>
+    <div class="bracket-card-combatant ${a1.isWinner ? 'is-winner' : ''}">
+      <div class="combatant-left">
+        ${a1.seed ? `<span class="seed-tag">[${escapeHtml(a1.seed)}]</span>` : ''}
+        <span class="combatant-name" title="${escapeHtml(a1.name)}">${escapeHtml(a1.name)}</span>
+        ${a1.clubCode ? `<span class="club-code-tag">${escapeHtml(a1.clubCode)}</span>` : ''}
+      </div>
+      <div class="combatant-score">${escapeHtml(a1.rawScore || '0')}</div>
+    </div>
+    <div class="bracket-card-combatant ${a2.isWinner ? 'is-winner' : ''}">
+      <div class="combatant-left">
+        ${a2.seed ? `<span class="seed-tag">[${escapeHtml(a2.seed)}]</span>` : ''}
+        <span class="combatant-name" title="${escapeHtml(a2.name)}">${escapeHtml(a2.name)}</span>
+        ${a2.clubCode ? `<span class="club-code-tag">${escapeHtml(a2.clubCode)}</span>` : ''}
+      </div>
+      <div class="combatant-score">${escapeHtml(a2.rawScore || '0')}</div>
+    </div>
+    ${(a1.sets || a2.sets) ? `
+      <div class="bracket-card-sets">
+        ${a1.sets ? `<span class="set-pill">${escapeHtml(a1.sets)}</span>` : ''}
+        ${a2.sets && a2.sets !== a1.sets ? `<span class="set-pill">${escapeHtml(a2.sets)}</span>` : ''}
+      </div>
+    ` : ''}
+  `;
+  return card;
+}
+
+function renderBracketStandings(tableData, pageTitle) {
+  if (!tableData || !tableData.rows || tableData.rows.length === 0) return;
+
+  // 1. Top 3 Podium
+  if (elements.bracketPodiumRow) {
+    elements.bracketPodiumRow.innerHTML = '';
+    const rows = tableData.rows;
+
+    const top3 = [
+      { rank: '1', medal: 'gold', icon: '🥇', title: 'Gold Medalist', row: rows.find(r => r.rank === '1' || (r.cells && r.cells[0] === '1')) },
+      { rank: '2', medal: 'silver', icon: '🥈', title: 'Silver Medalist', row: rows.find(r => r.rank === '2' || (r.cells && r.cells[0] === '2')) },
+      { rank: '3', medal: 'bronze', icon: '🥉', title: 'Bronze Medalist', row: rows.find(r => r.rank === '3' || (r.cells && r.cells[0] === '3')) }
+    ];
+
+    top3.forEach(item => {
+      if (item.row) {
+        const card = document.createElement('div');
+        card.className = `podium-card ${item.medal}`;
+        const name = item.row.athlete || (item.row.cells ? item.row.cells[1] : 'Unknown');
+        const club = item.row.club || (item.row.cells ? item.row.cells[2] : '');
+        card.innerHTML = `
+          <div class="podium-icon">${item.icon}</div>
+          <div class="podium-rank">${item.title}</div>
+          <div class="podium-name">${escapeHtml(name)}</div>
+          <div class="podium-club">${escapeHtml(club)}</div>
+        `;
+        elements.bracketPodiumRow.appendChild(card);
+      }
+    });
+  }
+
+  // 2. Standings Table
+  if (elements.bracketStandingsHead) {
+    elements.bracketStandingsHead.innerHTML = `
+      <tr>
+        <th style="width:70px;text-align:center;">Pos</th>
+        <th>Athlete</th>
+        <th>Club / Country</th>
+        <th>Details</th>
+      </tr>
+    `;
+  }
+
+  if (elements.bracketStandingsBody) {
+    elements.bracketStandingsBody.innerHTML = '';
+    tableData.rows.forEach(r => {
+      const rank = r.rank || (r.cells ? r.cells[0] : '');
+      const athlete = r.athlete || (r.cells ? r.cells[1] : '');
+      const club = r.club || (r.cells ? r.cells[2] : '');
+      const details = r.cells && r.cells.length > 3 ? r.cells.slice(3).join(' ') : '';
+
+      let medalBadge = rank;
+      if (rank === '1') medalBadge = '🥇 1';
+      else if (rank === '2') medalBadge = '🥈 2';
+      else if (rank === '3') medalBadge = '🥉 3';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align:center;font-weight:700;">${medalBadge}</td>
+        <td style="font-weight:600;">${escapeHtml(athlete)}</td>
+        <td><span class="club-badge">${escapeHtml(club)}</span></td>
+        <td style="font-size:0.8rem;color:var(--text-muted);">${escapeHtml(details)}</td>
+      `;
+      elements.bracketStandingsBody.appendChild(tr);
+    });
+  }
+}
+
+function updateBracketTransform() {
+  if (elements.bracketTreeCanvas) {
+    elements.bracketTreeCanvas.style.transform = `scale(${state.bracketZoom})`;
+  }
+  if (elements.bracketZoomResetBtn) {
+    elements.bracketZoomResetBtn.textContent = `${Math.round(state.bracketZoom * 100)}%`;
+  }
+}
+
+function toggleBracketFullscreen() {
+  const modalContainer = elements.tournamentModal.querySelector('.modal-container');
+  if (modalContainer) {
+    modalContainer.classList.toggle('fullscreen-bracket');
+    const isFull = modalContainer.classList.contains('fullscreen-bracket');
+    if (elements.bracketFullscreenBtn) {
+      elements.bracketFullscreenBtn.innerHTML = isFull ? '<i class="fa-solid fa-compress"></i>' : '<i class="fa-solid fa-expand"></i>';
+      elements.bracketFullscreenBtn.title = isFull ? 'Restore Window Size' : 'Toggle Fullscreen Width';
+    }
+  }
+}
+
+function setupBracketPan() {
+  const wrapper = elements.bracketTreeWrapper;
+  if (!wrapper) return;
+
+  let isDown = false;
+  let startX;
+  let startY;
+  let scrollLeft;
+  let scrollTop;
+
+  wrapper.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    isDown = true;
+    wrapper.classList.add('is-dragging');
+    startX = e.pageX - wrapper.offsetLeft;
+    startY = e.pageY - wrapper.offsetTop;
+    scrollLeft = wrapper.scrollLeft;
+    scrollTop = wrapper.scrollTop;
+  });
+
+  wrapper.addEventListener('mouseleave', () => {
+    isDown = false;
+    wrapper.classList.remove('is-dragging');
+  });
+
+  wrapper.addEventListener('mouseup', () => {
+    isDown = false;
+    wrapper.classList.remove('is-dragging');
+  });
+
+  wrapper.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - wrapper.offsetLeft;
+    const y = e.pageY - wrapper.offsetTop;
+    const walkX = (x - startX) * 1.5;
+    const walkY = (y - startY) * 1.5;
+    wrapper.scrollLeft = scrollLeft - walkX;
+    wrapper.scrollTop = scrollTop - walkY;
+  });
+
+  wrapper.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        state.bracketZoom = Math.min(2.0, +(state.bracketZoom + 0.1).toFixed(2));
+      } else {
+        state.bracketZoom = Math.max(0.4, +(state.bracketZoom - 0.1).toFixed(2));
+      }
+      updateBracketTransform();
+    }
+  }, { passive: false });
 }
 
 /**

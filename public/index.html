@@ -179,6 +179,7 @@
       <div class="modal-tabs" id="modalTabs">
         <button class="modal-tab active" data-tab="overview"><i class="fa-solid fa-file-lines"></i> Overview</button>
         <button class="modal-tab" data-tab="qualifications"><i class="fa-solid fa-bullseye"></i> Qualifications</button>
+        <button class="modal-tab" data-tab="brackets" id="modalTabBrackets"><i class="fa-solid fa-sitemap"></i> Finals & Brackets</button>
         <button class="modal-tab" data-tab="entries"><i class="fa-solid fa-users"></i> Roster</button>
         <button class="modal-tab" data-tab="export"><i class="fa-solid fa-file-export"></i> Export</button>
       </div>
@@ -232,6 +233,81 @@
               <thead id="qualTableHead"></thead>
               <tbody id="qualTableBody"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Finals & Brackets Tab -->
+        <div id="tabBrackets" class="tab-pane">
+          <div class="pane-toolbar bracket-toolbar">
+            <div class="category-selector-group">
+              <label for="bracketCategorySelect"><i class="fa-solid fa-sitemap"></i> Event / Bracket:</label>
+              <select id="bracketCategorySelect" class="styled-select"></select>
+            </div>
+
+            <!-- View Modes & Controls -->
+            <div class="bracket-controls-group">
+              <!-- View Switcher -->
+              <div class="bracket-view-switcher" id="bracketViewSwitcher">
+                <button id="bracketViewTreeBtn" class="view-btn active" title="Bracket Tree View">
+                  <i class="fa-solid fa-sitemap"></i> Tree
+                </button>
+                <button id="bracketViewCardsBtn" class="view-btn" title="Match Cards View">
+                  <i class="fa-solid fa-table-cells-large"></i> Matches
+                </button>
+                <button id="bracketViewStandingsBtn" class="view-btn" title="Final Standings" style="display:none;">
+                  <i class="fa-solid fa-medal"></i> Standings
+                </button>
+              </div>
+
+              <!-- Zoom Controls for Tree -->
+              <div class="bracket-zoom-controls" id="bracketZoomControls">
+                <button id="bracketZoomOutBtn" class="zoom-btn" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+                <button id="bracketZoomResetBtn" class="zoom-btn text" title="Reset Zoom">100%</button>
+                <button id="bracketZoomInBtn" class="zoom-btn" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+                <button id="bracketFullscreenBtn" class="zoom-btn" title="Toggle Fullscreen Width"><i class="fa-solid fa-expand"></i></button>
+              </div>
+
+              <!-- Direct PDF / Print -->
+              <a id="bracketPdfBtn" class="btn-secondary bracket-pdf-btn" href="#" target="_blank" title="Open Official PDF" style="display:none;">
+                <i class="fa-solid fa-file-pdf"></i> PDF
+              </a>
+            </div>
+          </div>
+
+          <!-- Bracket Loader -->
+          <div id="bracketLoader" class="loader-container mini" style="display:none;">
+            <div class="ring-spinner"></div>
+            <span style="font-size:0.82rem;color:var(--text-muted);margin-top:0.5rem;">Loading tournament bracket...</span>
+          </div>
+
+          <!-- Empty State -->
+          <div id="bracketEmptyState" class="bracket-empty-state" style="display:none;">
+            <i class="fa-solid fa-sitemap"></i>
+            <h4>No Bracket or Finals Data</h4>
+            <p>Elimination brackets or final rounds have not been published for this tournament yet.</p>
+          </div>
+
+          <!-- 1. Interactive Bracket Tree View -->
+          <div id="bracketTreeWrapper" class="bracket-tree-wrapper">
+            <div id="bracketTreeCanvas" class="bracket-tree-canvas">
+              <!-- Rendered Ianseo .table-grid injected here -->
+            </div>
+          </div>
+
+          <!-- 2. Match Cards View -->
+          <div id="bracketCardsWrapper" class="bracket-cards-wrapper" style="display:none;">
+            <div id="bracketRoundsRow" class="bracket-rounds-row"></div>
+          </div>
+
+          <!-- 3. Final Standings View (for /IF... or /TF...) -->
+          <div id="bracketStandingsWrapper" class="bracket-standings-wrapper" style="display:none;">
+            <div id="bracketPodiumRow" class="bracket-podium-row"></div>
+            <div class="table-container">
+              <table class="data-table" id="bracketStandingsTable">
+                <thead id="bracketStandingsHead"></thead>
+                <tbody id="bracketStandingsBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 

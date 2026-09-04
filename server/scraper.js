@@ -216,13 +216,89 @@ async function getTournamentDetails(toId) {
         // Determine category type
         let category = 'page';
         const lowerText = text.toLowerCase();
-        if (pdfUrl && (!webUrl || webUrl.endsWith('.pdf'))) category = 'pdf';
-        else if (lowerText.includes('recurve') || lowerText.includes('compound') || lowerText.includes('barebow') || lowerText.includes('traditional') || lowerText.includes('arrows') || lowerText.includes('flechas') || lowerText.includes('qualification') || lowerText.includes('clasificaci')) category = 'qualification';
-        else if (lowerText.includes('bracket') || lowerText.includes('elimination') || lowerText.includes('finals') || lowerText.includes('eliminat')) category = 'bracket';
-        else if (lowerText.includes('participant') || lowerText.includes('inscritos') || lowerText.includes('entry') || lowerText.includes('target') || lowerText.includes('country') || lowerText.includes('dianas')) category = 'entries';
-        else if (lowerText.includes('schedule') || lowerText.includes('agenda') || lowerText.includes('layout') || lowerText.includes('campo') || lowerText.includes('prospectus')) category = 'document';
-        else if (lowerText.includes('statistic') || lowerText.includes('number of entries') || lowerText.includes('inscri')) category = 'statistics';
-        else if (lowerText.includes('medal') || lowerText.includes('standing')) category = 'medals';
+        const lowerHead = (head || '').toLowerCase();
+        const pathStr = (href || '').toLowerCase();
+
+        if (pdfUrl && (!webUrl || webUrl.endsWith('.pdf'))) {
+          category = 'pdf';
+        } else if (
+          lowerHead.includes('bracket') ||
+          lowerHead.includes('elimina') ||
+          lowerHead.includes('tableau') ||
+          pathStr.includes('/ib') ||
+          pathStr.includes('/tb') ||
+          lowerText.includes('bracket') ||
+          lowerText.includes('elimination') ||
+          lowerText.includes('eliminat') ||
+          lowerText.includes('tableau')
+        ) {
+          category = 'bracket';
+        } else if (
+          lowerHead.includes('final round - ranking') ||
+          lowerHead.includes('final standing') ||
+          pathStr.includes('/if') ||
+          pathStr.includes('/tf')
+        ) {
+          category = 'bracket'; // Finals & Standings
+        } else if (
+          lowerHead.includes('qualification') ||
+          pathStr.includes('/iq') ||
+          pathStr.includes('/tq') ||
+          lowerText.includes('qualification') ||
+          lowerText.includes('clasificaci') ||
+          lowerText.includes('arrows') ||
+          lowerText.includes('flèches') ||
+          lowerText.includes('flechas')
+        ) {
+          category = 'qualification';
+        } else if (
+          lowerHead.includes('entry') ||
+          lowerHead.includes('participant') ||
+          pathStr.includes('/en') ||
+          pathStr.includes('/st') ||
+          lowerText.includes('participant') ||
+          lowerText.includes('inscritos') ||
+          lowerText.includes('entry') ||
+          lowerText.includes('target') ||
+          lowerText.includes('country') ||
+          lowerText.includes('dianas') ||
+          lowerText.includes('cibles')
+        ) {
+          category = 'entries';
+        } else if (
+          lowerHead.includes('schedule') ||
+          lowerHead.includes('agenda') ||
+          lowerText.includes('schedule') ||
+          lowerText.includes('agenda') ||
+          lowerText.includes('layout') ||
+          lowerText.includes('campo') ||
+          lowerText.includes('prospectus')
+        ) {
+          category = 'document';
+        } else if (
+          lowerHead.includes('statistic') ||
+          lowerText.includes('statistic') ||
+          lowerText.includes('number of entries') ||
+          lowerText.includes('inscri')
+        ) {
+          category = 'statistics';
+        } else if (
+          lowerHead.includes('medal') ||
+          lowerText.includes('medal') ||
+          lowerText.includes('standing')
+        ) {
+          category = 'medals';
+        } else if (
+          lowerText.includes('recurve') ||
+          lowerText.includes('compound') ||
+          lowerText.includes('barebow') ||
+          lowerText.includes('traditional')
+        ) {
+          category = 'qualification';
+        }
+
+        const isBracketTree = category === 'bracket' && (pathStr.includes('/ib') || pathStr.includes('/tb') || lowerHead.includes('bracket') || lowerText.includes('bracket'));
+        const isFinalStanding = category === 'bracket' && (pathStr.includes('/if') || pathStr.includes('/tf') || lowerHead.includes('ranking'));
 
         const itemObj = {
           text,
@@ -230,6 +306,9 @@ async function getTournamentDetails(toId) {
           pdfUrl,
           path: href ? href.replace(/^https?:\/\/[^\/]+/, '') : null,
           category,
+          sectionTitle: head,
+          isBracketTree,
+          isFinalStanding,
           updated: updateText
         };
         items.push(itemObj);
@@ -272,125 +351,156 @@ async function getEventData(toId, path) {
   const pageTitle = $('th.center, h2, h1, .table100-head th.font-weight-bold').first().text().trim() ||
                     $('title').text().replace('| Ianseo', '').trim();
 
-  // Parse tables
+  // Check if this is a Bracket Page (table.table-grid exists)
+  const isBracket = $('table.table-grid').length > 0;
+  let bracketData = null;
+
+  if (isBracket) {
+    const $grid = $('table.table-grid').first();
+    // Remove any scripts or unwanted tracking
+    $grid.find('script, iframe').remove();
+
+    // Extract rounds titles from header row
+    const rounds = [];
+    $grid.find('th .title').each((_, el) => {
+      const t = $(el).text().trim();
+      if (t && !rounds.includes(t)) rounds.push(t);
+    });
+
+    bracketData = {
+      isBracket: true,
+      rounds,
+      bracketHtml: $grid.prop('outerHTML')
+    };
+  }
+
+  // Check if this is a Final Ranking table page (/IF... or /TF...)
+  const isFinalRanking = path.includes('/IF') || path.includes('/TF') || (pageTitle.toLowerCase().includes('final') && !isBracket);
+
+  // Parse tables (only if not bracket page, or for fallback)
   const tables = [];
 
-  $('table').each((tableIdx, tableEl) => {
-    const $tbl = $(tableEl);
-    
-    // 1. Collect data rows
-    const rows = [];
-    let currentCategory = '';
+  if (!isBracket) {
+    $('table').each((tableIdx, tableEl) => {
+      const $tbl = $(tableEl);
+      
+      // 1. Collect data rows
+      const rows = [];
+      let currentCategory = '';
 
-    $tbl.find('tr').each((_, tr) => {
-      const $tr = $(tr);
-      if ($tr.hasClass('table100-head') || $tr.find('th').length > 0) return;
+      $tbl.find('tr').each((_, tr) => {
+        const $tr = $(tr);
+        if ($tr.hasClass('table100-head') || $tr.find('th').length > 0) return;
 
-      // Check if it is a category / section divider row
-      if ($tr.find('td[colspan]').length === 1) {
-        const span = parseInt($tr.find('td').first().attr('colspan') || '1', 10);
-        if (span > 2) {
-          currentCategory = $tr.text().trim();
-          return;
-        }
-      }
-
-      // Skip secondary line wrapper
-      if ($tr.hasClass('results-secondary-lines')) return;
-
-      const cells = [];
-      $tr.find('td').each((_, td) => {
-        const text = $(td).text().trim().replace(/\s+/g, ' ');
-        cells.push(text);
-      });
-
-      if (cells.length > 0 && cells.some(c => c.length > 0)) {
-        const rowObj = {
-          category: currentCategory,
-          cells
-        };
-
-        if (cells.length >= 3) {
-          rowObj.rank = cells[0] || '';
-          rowObj.athlete = cells[1] || '';
-          rowObj.club = cells[2] || '';
-          rowObj.scores = cells.slice(3);
-          rowObj.total = cells[cells.length - 3] || cells[cells.length - 1] || '';
-        }
-
-        rows.push(rowObj);
-      }
-    });
-
-    const maxCells = rows.reduce((max, r) => Math.max(max, r.cells ? r.cells.length : 0), 0);
-
-    // 2. Extract headers intelligently
-    let headers = [];
-    const headerRows = [];
-    $tbl.find('tr').each((_, tr) => {
-      const $tr = $(tr);
-      const ths = $tr.find('th');
-      if (ths.length > 0) {
-        const rowHeaders = [];
-        ths.each((_, th) => {
-          const $th = $(th);
-          const colspan = parseInt($th.attr('colspan') || '1', 10);
-          const h = $th.text().trim();
-          if (colspan >= 3 && ths.length === 1) return; // Skip full width table banner titles
-          if (h) rowHeaders.push(h);
-        });
-        if (rowHeaders.length > 0) {
-          headerRows.push(rowHeaders);
-        }
-      }
-    });
-
-    if (headerRows.length > 0) {
-      const matchingRow = headerRows.find(hr => hr.length === maxCells);
-      if (matchingRow) {
-        headers = matchingRow;
-      } else {
-        const largest = headerRows.reduce((prev, curr) => curr.length > prev.length ? curr : prev, []);
-        headers = largest.slice(0, maxCells > 0 ? maxCells : largest.length);
-      }
-    }
-
-    // 3. Strip any column where all row cells and header are empty
-    if (maxCells > 0) {
-      const validCols = [];
-      for (let j = 0; j < maxCells; j++) {
-        const headerHasContent = headers[j] && headers[j].trim().length > 0;
-        const rowHasContent = rows.some(r => r.cells && r.cells[j] && r.cells[j].trim().length > 0);
-        if (headerHasContent || rowHasContent) {
-          validCols.push(j);
-        }
-      }
-
-      if (validCols.length < maxCells || headers.length !== validCols.length) {
-        headers = validCols.map(j => headers[j] || '');
-        rows.forEach(r => {
-          if (r.cells) {
-            r.cells = validCols.map(j => r.cells[j] || '');
+        // Check if it is a category / section divider row
+        if ($tr.find('td[colspan]').length === 1) {
+          const span = parseInt($tr.find('td').first().attr('colspan') || '1', 10);
+          if (span > 2) {
+            currentCategory = $tr.text().trim();
+            return;
           }
+        }
+
+        // Skip secondary line wrapper
+        if ($tr.hasClass('results-secondary-lines')) return;
+
+        const cells = [];
+        $tr.find('td').each((_, td) => {
+          const text = $(td).text().trim().replace(/\s+/g, ' ');
+          cells.push(text);
+        });
+
+        if (cells.length > 0 && cells.some(c => c.length > 0)) {
+          const rowObj = {
+            category: currentCategory,
+            cells
+          };
+
+          if (cells.length >= 3) {
+            rowObj.rank = cells[0] || '';
+            rowObj.athlete = cells[1] || '';
+            rowObj.club = cells[2] || '';
+            rowObj.scores = cells.slice(3);
+            rowObj.total = cells[cells.length - 3] || cells[cells.length - 1] || '';
+          }
+
+          rows.push(rowObj);
+        }
+      });
+
+      const maxCells = rows.reduce((max, r) => Math.max(max, r.cells ? r.cells.length : 0), 0);
+
+      // 2. Extract headers intelligently
+      let headers = [];
+      const headerRows = [];
+      $tbl.find('tr').each((_, tr) => {
+        const $tr = $(tr);
+        const ths = $tr.find('th');
+        if (ths.length > 0) {
+          const rowHeaders = [];
+          ths.each((_, th) => {
+            const $th = $(th);
+            const colspan = parseInt($th.attr('colspan') || '1', 10);
+            const h = $th.text().trim();
+            if (colspan >= 3 && ths.length === 1) return; // Skip full width table banner titles
+            if (h) rowHeaders.push(h);
+          });
+          if (rowHeaders.length > 0) {
+            headerRows.push(rowHeaders);
+          }
+        }
+      });
+
+      if (headerRows.length > 0) {
+        const matchingRow = headerRows.find(hr => hr.length === maxCells);
+        if (matchingRow) {
+          headers = matchingRow;
+        } else {
+          const largest = headerRows.reduce((prev, curr) => curr.length > prev.length ? curr : prev, []);
+          headers = largest.slice(0, maxCells > 0 ? maxCells : largest.length);
+        }
+      }
+
+      // 3. Strip any column where all row cells and header are empty
+      if (maxCells > 0) {
+        const validCols = [];
+        for (let j = 0; j < maxCells; j++) {
+          const headerHasContent = headers[j] && headers[j].trim().length > 0;
+          const rowHasContent = rows.some(r => r.cells && r.cells[j] && r.cells[j].trim().length > 0);
+          if (headerHasContent || rowHasContent) {
+            validCols.push(j);
+          }
+        }
+
+        if (validCols.length < maxCells || headers.length !== validCols.length) {
+          headers = validCols.map(j => headers[j] || '');
+          rows.forEach(r => {
+            if (r.cells) {
+              r.cells = validCols.map(j => r.cells[j] || '');
+            }
+          });
+        }
+      }
+
+      if (rows.length > 0 || headers.length > 0) {
+        tables.push({
+          tableIndex: tableIdx,
+          headers,
+          rowsCount: rows.length,
+          rows
         });
       }
-    }
-
-    if (rows.length > 0 || headers.length > 0) {
-      tables.push({
-        tableIndex: tableIdx,
-        headers,
-        rowsCount: rows.length,
-        rows
-      });
-    }
-  });
+    });
+  }
 
   return {
     toId,
     path,
     url: fullUrl,
     pageTitle,
+    isBracket,
+    isFinalRanking,
+    bracketData,
     tables
   };
 }
