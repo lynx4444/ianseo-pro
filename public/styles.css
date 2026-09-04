@@ -2029,11 +2029,16 @@ a:hover {
   font-weight: 600;
 }
 
-/* Highlighted Match Winner Cells */
+/* Highlighted Match Winner Cells (Highest Score is Green) */
 .bracket-tree-canvas td.winner-cell {
-  background-color: rgba(34, 197, 94, 0.18) !important;
-  color: #22c55e !important;
-  font-weight: 700 !important;
+  background-color: var(--target-green, #10b981) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  border: 1.5px solid #059669 !important;
+  border-radius: 4px !important;
+  text-align: center !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5) !important;
+  letter-spacing: 0.5px;
 }
 
 /* Match Cards View */
@@ -2119,7 +2124,8 @@ a:hover {
 }
 
 .bracket-card-combatant.is-winner {
-  background: rgba(34, 197, 94, 0.12);
+  background: rgba(16, 185, 129, 0.14);
+  border-left: 3px solid var(--target-green, #10b981);
   font-weight: 700;
 }
 
@@ -2172,8 +2178,9 @@ a:hover {
 }
 
 .bracket-card-combatant.is-winner .combatant-score {
-  background: var(--target-green);
-  color: #ffffff;
+  background: var(--target-green, #10b981) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.45);
 }
 
 .bracket-card-sets {

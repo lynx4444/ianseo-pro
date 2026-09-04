@@ -1113,24 +1113,85 @@ function renderBracketView(data) {
   }
 }
 
+function compareBracketScores(scoreStr1, scoreStr2) {
+  const s1 = String(scoreStr1 || '').trim();
+  const s2 = String(scoreStr2 || '').trim();
+  const isBye1 = s1.toLowerCase() === 'bye';
+  const isBye2 = s2.toLowerCase() === 'bye';
+
+  if (isBye1 && !isBye2) return -1;
+  if (isBye2 && !isBye1) return 1;
+  if (isBye1 && isBye2) return 0;
+
+  const num1 = parseInt(s1.replace(/[^0-9]/g, ''), 10) || 0;
+  const num2 = parseInt(s2.replace(/[^0-9]/g, ''), 10) || 0;
+
+  if (num1 > num2) return 1;
+  if (num2 > num1) return -1;
+
+  if (s1.includes('*') && !s2.includes('*')) return 1;
+  if (s2.includes('*') && !s1.includes('*')) return -1;
+
+  return 0;
+}
+
 function renderBracketTree(bracketHtml, rounds) {
   if (!elements.bracketTreeCanvas) return;
   elements.bracketTreeCanvas.innerHTML = bracketHtml;
   
-  // Highlight winner scores in the tree
+  // Highlight winner scores (who has the highest score is green)
   const table = elements.bracketTreeCanvas.querySelector('.table-grid');
   if (table) {
-    table.querySelectorAll('tr').forEach(tr => {
-      const dataCells = tr.querySelectorAll('td.data-cell');
-      dataCells.forEach(td => {
+    const realScoreCells = [];
+    table.querySelectorAll('tr').forEach((tr, rIdx) => {
+      tr.querySelectorAll('td.c.data-cell').forEach(td => {
         const txt = td.textContent.trim();
-        if (/^[0-9]+(\*)?$/.test(txt)) {
-          const num = parseInt(txt, 10);
-          if (num >= 6) {
-            td.classList.add('winner-cell');
-          }
+        // A match score cell is preceded by an archer/team name cell with bracket borders
+        const prevCells = Array.from(tr.querySelectorAll('td.data-cell'));
+        const tdIdx = prevCells.indexOf(td);
+        const precedingCells = prevCells.slice(0, tdIdx);
+        const hasPrecedingName = precedingCells.some(p => {
+          const cls = p.className || '';
+          return cls.includes('t') || cls.includes('b') || cls.includes('r');
+        });
+
+        if (hasPrecedingName && (/^[0-9]+(\*)?$/i.test(txt) || txt.toLowerCase() === 'bye')) {
+          realScoreCells.push({
+            rIdx,
+            colIdx: Array.from(tr.children).indexOf(td),
+            txt,
+            td
+          });
         }
       });
+    });
+
+    // Group score cells by column index
+    const byCol = {};
+    realScoreCells.forEach(item => {
+      if (!byCol[item.colIdx]) byCol[item.colIdx] = [];
+      byCol[item.colIdx].push(item);
+    });
+
+    // Compare each head-to-head pair in each round: the highest score is styled green
+    Object.values(byCol).forEach(items => {
+      // Byes are automatic advances and do not have an opponent score in that round
+      const nonByes = items.filter(it => it.txt.toLowerCase() !== 'bye');
+      
+      for (let i = 0; i < nonByes.length; i += 2) {
+        const a1 = nonByes[i];
+        const a2 = nonByes[i + 1];
+        if (a2) {
+          const cmp = compareBracketScores(a1.txt, a2.txt);
+          if (cmp > 0) {
+            a1.td.classList.add('winner-cell');
+            a1.td.title = `Winner (Highest Score: ${a1.txt})`;
+          } else if (cmp < 0) {
+            a2.td.classList.add('winner-cell');
+            a2.td.title = `Winner (Highest Score: ${a2.txt})`;
+          }
+        }
+      }
     });
   }
 
@@ -1175,7 +1236,7 @@ function renderBracketCards(bracketHtml, rounds) {
         name: r.texts[1],
         clubCode: r.texts[2] || '',
         clubName: r.texts[3] || '',
-        score: parseInt(r.texts[4] || '0', 10),
+        score: parseInt(r.texts[4] || '0', 10) || 0,
         rawScore: r.texts[4] || '0',
         sets: (r.sets && r.sets[0]) ? r.sets[0] : ''
       };
@@ -1187,12 +1248,13 @@ function renderBracketCards(bracketHtml, rounds) {
           name: r2.texts[1],
           clubCode: r2.texts[2] || '',
           clubName: r2.texts[3] || '',
-          score: parseInt(r2.texts[4] || '0', 10),
+          score: parseInt(r2.texts[4] || '0', 10) || 0,
           rawScore: r2.texts[4] || '0',
           sets: (r.sets && r.sets[1]) ? r.sets[1] : (r2.sets[0] || '')
         };
-        archer1.isWinner = archer1.score > archer2.score;
-        archer2.isWinner = archer2.score > archer1.score;
+        const cmp = compareBracketScores(archer1.rawScore, archer2.rawScore);
+        archer1.isWinner = cmp > 0;
+        archer2.isWinner = cmp < 0;
         round1Matches.push({ archer1, archer2 });
         i++;
       }
@@ -1231,8 +1293,9 @@ function renderBracketCards(bracketHtml, rounds) {
         if (laterMatches[p + 1]) {
           const a1 = laterMatches[p];
           const a2 = laterMatches[p + 1];
-          a1.isWinner = a1.score > a2.score;
-          a2.isWinner = a2.score > a1.score;
+          const cmp = compareBracketScores(a1.rawScore, a2.rawScore);
+          a1.isWinner = cmp > 0;
+          a2.isWinner = cmp < 0;
           pairs.push({ archer1: a1, archer2: a2 });
         }
       }
