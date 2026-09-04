@@ -5,7 +5,7 @@
 // Application State
 const state = {
   year: '2026',
-  countryid: '',
+  countryid: 'MAS',
   comptime: '', // '' = all, '1' = today, '2' = completed, '3' = upcoming
   searchQuery: '',
   viewMode: 'grid', // 'grid' | 'table'
@@ -427,16 +427,18 @@ function updateHeroStats(data) {
  * Populate Country Dropdown
  */
 function populateCountryOptions() {
-  const currentVal = state.countryid;
+  const currentVal = state.countryid || 'MAS';
   elements.countrySelect.innerHTML = '<option value="">All Countries</option>';
 
   state.countries.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.code;
-    opt.textContent = `${c.name} (${c.code})`;
+    opt.textContent = c.name.includes(c.code) ? c.name : `${c.name} (${c.code})`;
     if (c.code === currentVal) opt.selected = true;
     elements.countrySelect.appendChild(opt);
   });
+
+  elements.countrySelect.value = currentVal;
 }
 
 /**
@@ -1883,13 +1885,13 @@ function setViewMode(mode) {
 
 function resetFilters() {
   state.year = '2026';
-  state.countryid = '';
+  state.countryid = 'MAS';
   state.comptime = '';
   state.searchQuery = '';
   elements.globalSearchInput.value = '';
   elements.clearSearchBtn.style.display = 'none';
   elements.yearSelect.value = '2026';
-  elements.countrySelect.value = '';
+  elements.countrySelect.value = 'MAS';
   setActiveStatusTab('');
 }
 
@@ -1913,7 +1915,8 @@ function updateFilterChips() {
   }
   if (state.countryid) {
     const cObj = state.countries.find(c => c.code === state.countryid);
-    chips.push({ label: `Country: ${cObj ? cObj.name : state.countryid}`, onRemove: () => {
+    const countryLabel = cObj ? cObj.name : (state.countryid === 'MAS' ? 'Malaysia (MAS)' : state.countryid);
+    chips.push({ label: `Country: ${countryLabel}`, onRemove: () => {
       state.countryid = '';
       elements.countrySelect.value = '';
       loadTournaments();
