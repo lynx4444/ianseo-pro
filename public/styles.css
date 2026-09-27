@@ -656,6 +656,18 @@ a:hover {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.tab-label-full {
+  display: inline;
+}
+
+.tab-label-short {
+  display: none;
+}
+
+.year-select-wrapper {
+  display: none;
+}
+
 /* Status Indicators (Dot Badges) */
 .status-dot {
   width: 7px;
@@ -2580,9 +2592,14 @@ a:hover {
 @media (max-width: 768px) {
   .header-container {
     flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+  .header-credibility {
+    display: none;
   }
   .header-search {
     order: 3;
+    width: 100%;
     max-width: 100%;
   }
   .hero-title {
@@ -2591,12 +2608,120 @@ a:hover {
   .hero-section {
     padding: 1.5rem;
   }
-  .filter-wrapper {
+  /* Mobile Streamlined Filter Section */
+  .filter-section {
+    padding: 0.75rem 0.85rem;
+    gap: 0.65rem;
+    border-radius: var(--radius-md);
+  }
+
+  .filter-primary-row {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.55rem;
   }
-  .status-tabs {
-    overflow-x: auto;
+
+  /* Full-width balanced 3-segment bar */
+  .segmented-control {
+    width: 100%;
+    display: flex;
+    padding: 3px;
+    gap: 3px;
+    box-sizing: border-box;
+  }
+
+  .seg-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.45rem 0.25rem;
+    font-size: 0.8rem;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .tab-label-full {
+    display: none !important;
+  }
+
+  .tab-label-short {
+    display: inline !important;
+  }
+
+  /* Compact actions row (Freshness & View mode) */
+  .filter-actions-group {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .freshness-indicator {
+    font-size: 0.72rem;
+    padding: 0.22rem 0.6rem;
+  }
+
+  .freshness-indicator i {
+    font-size: 0.7rem;
+  }
+
+  /* Secondary Filter Row: Clean 2-column dropdown grid instead of multi-chip wrapping */
+  .filter-secondary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--border-color);
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chip-filter-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+  }
+
+  /* Hide raw labels and overflowing chip buttons on mobile */
+  .chips-container {
+    display: none !important;
+  }
+
+  .chip-group-label {
+    display: none !important;
+  }
+
+  .custom-select-wrapper {
+    width: 100%;
+    display: block !important;
+    min-width: 0;
+  }
+
+  .styled-select-compact {
+    display: block !important;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.45rem 1.6rem 0.45rem 0.7rem;
+    font-size: 0.8rem;
+    background-color: var(--bg-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .active-filters-bar {
+    padding-top: 0.45rem;
+    gap: 0.35rem;
+  }
+
+  .filter-summary {
+    font-size: 0.72rem;
   }
   .footer-container {
     flex-direction: column;

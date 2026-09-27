@@ -83,7 +83,8 @@
       <div class="filter-primary-row">
         <div class="segmented-control" id="statusTabs" role="tablist" aria-label="Tournament Status Filter">
           <button class="seg-btn status-tab active" data-time="" role="tab" aria-selected="true">
-            <span>All Competitions</span>
+            <span class="tab-label-full">All Competitions</span>
+            <span class="tab-label-short">All</span>
           </button>
           <button class="seg-btn status-tab" data-time="3" role="tab" aria-selected="false">
             <span class="status-dot upcoming"></span>
@@ -119,31 +120,32 @@
       <!-- Secondary Filter Row: Pill/Chip Buttons for Year & Country -->
       <div class="filter-secondary-row">
         <!-- Year Chip Buttons -->
-        <div class="chip-filter-group">
+        <div class="chip-filter-group year-filter-group">
           <span class="chip-group-label"><i class="fa-regular fa-calendar"></i> Year:</span>
           <div class="chips-container" id="yearChipsContainer">
             <!-- Dynamically populated with filled-vs-outline pill buttons -->
           </div>
-          <!-- Fallback/extended select for older years -->
-          <select id="yearSelect" class="styled-select-compact" style="display:none;" title="Select Year">
-            <option value="2027">2027</option>
-            <option value="2026" selected>2026</option>
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-            <option value="2021">2021</option>
-            <option value="2020">2020</option>
-          </select>
+          <div class="custom-select-wrapper year-select-wrapper">
+            <select id="yearSelect" class="styled-select-compact" title="Select Year">
+              <option value="2027">2027</option>
+              <option value="2026" selected>2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+            </select>
+          </div>
         </div>
 
         <!-- Country Chip Buttons -->
-        <div class="chip-filter-group">
+        <div class="chip-filter-group country-filter-group">
           <span class="chip-group-label"><i class="fa-solid fa-globe"></i> Country:</span>
           <div class="chips-container" id="countryChipsContainer">
             <!-- Dynamically populated with filled-vs-outline pill buttons -->
           </div>
-          <div class="custom-select-wrapper">
+          <div class="custom-select-wrapper country-select-wrapper">
             <select id="countrySelect" class="styled-select-compact" title="Browse All Countries">
               <option value="MAS" selected>Malaysia (MAS)</option>
               <option value="">All Countries</option>

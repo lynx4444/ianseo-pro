@@ -255,6 +255,7 @@ function setupEventListeners() {
   elements.yearSelect.addEventListener('change', async (e) => {
     state.year = e.target.value;
     state.currentPage = 1;
+    renderYearChips(state.years, e.target.value);
     await loadTournaments();
   });
 
@@ -262,6 +263,7 @@ function setupEventListeners() {
   elements.countrySelect.addEventListener('change', async (e) => {
     state.countryid = e.target.value;
     state.currentPage = 1;
+    renderCountryChips();
     await loadTournaments();
   });
 
