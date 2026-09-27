@@ -62,14 +62,17 @@ async function getTournaments(options = {}) {
   // Extract filter options (years & countries)
   const years = [];
   $('#Year option').each((_, el) => {
-    const val = $(el).val();
-    if (val) years.push(val);
+    const rawVal = $(el).val();
+    if (rawVal) {
+      const cleanVal = rawVal.replace(/^\*+\s*/, '').trim();
+      if (cleanVal && !years.includes(cleanVal)) years.push(cleanVal);
+    }
   });
 
   const countries = [];
   $('#countryid option').each((_, el) => {
     const code = $(el).val();
-    const name = $(el).text().trim();
+    let name = $(el).text().replace(/^\*+\s*/, '').trim();
     if (code) countries.push({ code, name });
   });
 
@@ -114,9 +117,7 @@ async function getTournaments(options = {}) {
     const dates = $row.find('td.column7').text().trim();
     const updated = $row.find('td.column8').text().trim();
 
-    const isLiveToday = currentSection.toLowerCase().includes('today') ||
-                        updated.toLowerCase().includes('today') ||
-                        $row.find('.update').length > 0;
+    const isLiveToday = currentSection.toLowerCase().includes('today');
 
     tournaments.push({
       toId,
