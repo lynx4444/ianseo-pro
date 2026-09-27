@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Ianseo Pro - Archery tournament results, live scores, rankings and brackets.">
+  <meta name="description" content="Ianseo Pro - High-precision archery tournament hub, live scores, qualification rankings and elimination brackets powered by Ianseo.net.">
   <title>Ianseo Pro | Archery Tournament Hub</title>
   
   <!-- Tab Icon (Favicon) -->
@@ -13,7 +13,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -25,28 +25,49 @@
   <!-- Header / Navigation -->
   <header class="app-header">
     <div class="header-container">
-      <div class="brand-area" id="brandHomeBtn">
-        <div class="target-logo-icon">
-          <div class="ring blue"></div>
-          <div class="ring red"></div>
-          <div class="ring gold"></div>
+      <div class="brand-area" id="brandHomeBtn" title="Ianseo Pro Home">
+        <div class="target-brand-mark">
+          <svg class="archery-reticle-svg" viewBox="0 0 44 44" width="38" height="38" aria-hidden="true">
+            <!-- Outer Target Ring (Target White 1-2) -->
+            <circle cx="22" cy="22" r="20" stroke="rgba(255,255,255,0.18)" stroke-width="1.8" fill="#0B1324"/>
+            <!-- Target Blue Ring (5-6) -->
+            <circle cx="22" cy="22" r="15" stroke="#2563EB" stroke-width="1.8" fill="none" opacity="0.85"/>
+            <!-- Target Red Ring (7-8) -->
+            <circle cx="22" cy="22" r="10.5" stroke="#DC2626" stroke-width="1.8" fill="none" opacity="0.95"/>
+            <!-- Target Gold 10-Ring (9-10) -->
+            <circle cx="22" cy="22" r="6" stroke="#E5A93C" stroke-width="2" fill="rgba(229, 169, 60, 0.28)"/>
+            <!-- Precision Center X Crosshair -->
+            <line x1="22" y1="18.5" x2="22" y2="25.5" stroke="#E5A93C" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="18.5" y1="22" x2="25.5" y2="22" stroke="#E5A93C" stroke-width="1.5" stroke-linecap="round"/>
+            <!-- Trajectory Arc Line -->
+            <path d="M 4 36 A 25 25 0 0 1 38 8" fill="none" stroke="rgba(229, 169, 60, 0.45)" stroke-width="1.2" stroke-dasharray="2 3"/>
+          </svg>
         </div>
         <div class="brand-text">
-          <div class="brand-title">IANSEO<span>PRO</span></div>
+          <div class="brand-title">IANSEO<span class="brand-pro">PRO</span></div>
+          <div class="brand-tagline">ARCHERY COMPETITION HUB</div>
         </div>
+      </div>
+
+      <!-- Credibility Sync Badge (Desktop) -->
+      <div class="header-credibility">
+        <span class="sync-badge" title="Data synchronized with Ianseo.net">
+          <i class="fa-solid fa-database"></i>
+          <span class="sync-text">Official Ianseo Data</span>
+        </span>
       </div>
 
       <!-- Header Search -->
       <div class="header-search">
         <i class="fa-solid fa-magnifying-glass search-icon"></i>
-        <input type="text" id="globalSearchInput" placeholder="Search tournaments, archers..." autocomplete="off">
+        <input type="text" id="globalSearchInput" placeholder="Search tournaments, codes, locations..." autocomplete="off">
         <span class="search-shortcut">/</span>
-        <button id="clearSearchBtn" class="clear-search-btn" style="display:none;"><i class="fa-solid fa-xmark"></i></button>
+        <button id="clearSearchBtn" class="clear-search-btn" style="display:none;" title="Clear search"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <!-- Header Actions -->
       <div class="header-actions">
-        <button id="themeToggleBtn" class="btn-icon" title="Toggle Theme">
+        <button id="themeToggleBtn" class="btn-icon" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
           <i class="fa-solid fa-moon"></i>
         </button>
       </div>
@@ -58,78 +79,203 @@
 
     <!-- Filter & Toolbar Section -->
     <section class="filter-section">
-      <div class="filter-wrapper">
-        <!-- Status Tabs -->
-        <div class="status-tabs" id="statusTabs">
-          <button class="status-tab active" data-time="">All</button>
-          <button class="status-tab live-tab" data-time="1">
-            <span class="pulse-dot"></span> Live
+      <!-- Primary Filter Row: Visually Dominant Segmented Control -->
+      <div class="filter-primary-row">
+        <div class="segmented-control" id="statusTabs" role="tablist" aria-label="Tournament Status Filter">
+          <button class="seg-btn status-tab active" data-time="" role="tab" aria-selected="true">
+            <span>All Competitions</span>
           </button>
-          <button class="status-tab" data-time="3">Upcoming</button>
-          <button class="status-tab" data-time="2">Past</button>
+          <button class="seg-btn status-tab" data-time="3" role="tab" aria-selected="false">
+            <span class="status-dot upcoming"></span>
+            <span>Upcoming</span>
+          </button>
+          <button class="seg-btn status-tab" data-time="2" role="tab" aria-selected="false">
+            <span class="status-dot past"></span>
+            <span>Past</span>
+          </button>
         </div>
 
-        <!-- Filter Controls -->
-        <div class="filter-controls">
-          <!-- Year Selector -->
-          <div class="control-group">
-            <label for="yearSelect"><i class="fa-solid fa-calendar"></i></label>
-            <select id="yearSelect" class="styled-select">
-              <option value="2027">2027</option>
-              <option value="2026" selected>2026</option>
-              <option value="2025">2025</option>
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
-              <option value="2021">2021</option>
-              <option value="2020">2020</option>
-            </select>
-          </div>
-
-          <!-- Country Selector -->
-          <div class="control-group">
-            <label for="countrySelect"><i class="fa-solid fa-globe"></i></label>
-            <select id="countrySelect" class="styled-select">
-              <option value="MAS" selected>Malaysia (MAS)</option>
-              <option value="">All Countries</option>
-            </select>
+        <!-- View Controls & Freshness Sync -->
+        <div class="filter-actions-group">
+          <!-- Prominent Freshness Indicator -->
+          <div class="freshness-indicator" id="freshnessIndicator" title="Data freshness from Ianseo.net">
+            <i class="fa-regular fa-clock"></i>
+            <span class="freshness-label" id="freshnessLabel">Synced with Ianseo</span>
           </div>
 
           <!-- View Switcher -->
-          <div class="view-switcher">
-            <button id="viewGridBtn" class="view-btn active" title="Grid"><i class="fa-solid fa-grip"></i></button>
-            <button id="viewTableBtn" class="view-btn" title="Table"><i class="fa-solid fa-list"></i></button>
+          <div class="view-switcher" role="group" aria-label="View Mode">
+            <button id="viewGridBtn" class="view-btn active" title="Grid Cards View" aria-label="Grid Cards View"><i class="fa-solid fa-grip"></i></button>
+            <button id="viewTableBtn" class="view-btn" title="Data Table View" aria-label="Data Table View"><i class="fa-solid fa-list"></i></button>
           </div>
 
           <!-- Auto Refresh Toggle -->
-          <button id="autoRefreshBtn" class="btn-refresh" title="Auto-Sync">
+          <button id="autoRefreshBtn" class="btn-refresh" title="Sync Updates" aria-label="Sync Updates">
             <i class="fa-solid fa-arrows-rotate"></i>
           </button>
         </div>
       </div>
 
+      <!-- Secondary Filter Row: Pill/Chip Buttons for Year & Country -->
+      <div class="filter-secondary-row">
+        <!-- Year Chip Buttons -->
+        <div class="chip-filter-group">
+          <span class="chip-group-label"><i class="fa-regular fa-calendar"></i> Year:</span>
+          <div class="chips-container" id="yearChipsContainer">
+            <!-- Dynamically populated with filled-vs-outline pill buttons -->
+          </div>
+          <!-- Fallback/extended select for older years -->
+          <select id="yearSelect" class="styled-select-compact" style="display:none;" title="Select Year">
+            <option value="2027">2027</option>
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+          </select>
+        </div>
+
+        <!-- Country Chip Buttons -->
+        <div class="chip-filter-group">
+          <span class="chip-group-label"><i class="fa-solid fa-globe"></i> Country:</span>
+          <div class="chips-container" id="countryChipsContainer">
+            <!-- Dynamically populated with filled-vs-outline pill buttons -->
+          </div>
+          <div class="custom-select-wrapper">
+            <select id="countrySelect" class="styled-select-compact" title="Browse All Countries">
+              <option value="MAS" selected>Malaysia (MAS)</option>
+              <option value="">All Countries</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- Active Filters Bar -->
       <div class="active-filters-bar" id="activeFiltersBar" style="display:none;">
-        <span class="filter-summary">Filters:</span>
+        <span class="filter-summary">Active Filters:</span>
         <div id="filterChips" class="filter-chips"></div>
-        <button id="resetAllFiltersBtn" class="btn-text">Clear</button>
+        <button id="resetAllFiltersBtn" class="btn-text"><i class="fa-solid fa-xmark"></i> Clear All</button>
       </div>
     </section>
 
     <!-- Tournaments Results Area -->
     <section class="tournaments-section">
       <div class="section-header">
-        <h2 class="section-title" id="tournamentsHeading">Tournaments</h2>
+        <div class="section-title-wrap">
+          <h2 class="section-title" id="tournamentsHeading">Tournaments</h2>
+        </div>
         <div class="results-meta">
-          <span id="resultsCount">Loading...</span>
+          <span id="resultsCount">Loading tournaments...</span>
         </div>
       </div>
 
-      <!-- Loader -->
-      <div id="mainLoader" class="loader-container">
-        <div class="target-spinner">
-          <div class="ring-spinner"></div>
-          <i class="fa-solid fa-crosshairs"></i>
+      <!-- Skeleton Loading State -->
+      <div id="mainLoader" class="skeleton-loading-container">
+        <div class="skeleton-grid">
+          <div class="skeleton-card">
+            <div class="skeleton-row-between">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-pill xs"></div>
+            </div>
+            <div class="skeleton-bar title"></div>
+            <div class="skeleton-bar title short"></div>
+            <div class="skeleton-meta-lines">
+              <div class="skeleton-bar sm"></div>
+              <div class="skeleton-bar sm short"></div>
+              <div class="skeleton-bar sm"></div>
+            </div>
+            <div class="skeleton-card-footer">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-btn sm"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-row-between">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-pill xs"></div>
+            </div>
+            <div class="skeleton-bar title"></div>
+            <div class="skeleton-bar title short"></div>
+            <div class="skeleton-meta-lines">
+              <div class="skeleton-bar sm"></div>
+              <div class="skeleton-bar sm short"></div>
+              <div class="skeleton-bar sm"></div>
+            </div>
+            <div class="skeleton-card-footer">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-btn sm"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-row-between">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-pill xs"></div>
+            </div>
+            <div class="skeleton-bar title"></div>
+            <div class="skeleton-bar title short"></div>
+            <div class="skeleton-meta-lines">
+              <div class="skeleton-bar sm"></div>
+              <div class="skeleton-bar sm short"></div>
+              <div class="skeleton-bar sm"></div>
+            </div>
+            <div class="skeleton-card-footer">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-btn sm"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-row-between">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-pill xs"></div>
+            </div>
+            <div class="skeleton-bar title"></div>
+            <div class="skeleton-bar title short"></div>
+            <div class="skeleton-meta-lines">
+              <div class="skeleton-bar sm"></div>
+              <div class="skeleton-bar sm short"></div>
+              <div class="skeleton-bar sm"></div>
+            </div>
+            <div class="skeleton-card-footer">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-btn sm"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-row-between">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-pill xs"></div>
+            </div>
+            <div class="skeleton-bar title"></div>
+            <div class="skeleton-bar title short"></div>
+            <div class="skeleton-meta-lines">
+              <div class="skeleton-bar sm"></div>
+              <div class="skeleton-bar sm short"></div>
+              <div class="skeleton-bar sm"></div>
+            </div>
+            <div class="skeleton-card-footer">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-btn sm"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-row-between">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-pill xs"></div>
+            </div>
+            <div class="skeleton-bar title"></div>
+            <div class="skeleton-bar title short"></div>
+            <div class="skeleton-meta-lines">
+              <div class="skeleton-bar sm"></div>
+              <div class="skeleton-bar sm short"></div>
+              <div class="skeleton-bar sm"></div>
+            </div>
+            <div class="skeleton-card-footer">
+              <div class="skeleton-pill sm"></div>
+              <div class="skeleton-btn sm"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -141,14 +287,14 @@
         <table class="data-table" id="tournamentsTable">
           <thead>
             <tr>
-              <th>Status</th>
-              <th>Code</th>
-              <th>Tournament</th>
+              <th style="width: 110px;">Status</th>
+              <th style="width: 90px;">Code</th>
+              <th>Tournament Name</th>
               <th>Organizer</th>
               <th>Location</th>
-              <th>Dates</th>
-              <th>Updated</th>
-              <th>Action</th>
+              <th style="width: 130px;">Dates</th>
+              <th style="width: 120px;">Updated</th>
+              <th style="width: 80px; text-align: center;">Action</th>
             </tr>
           </thead>
           <tbody id="tournamentsTableBody"></tbody>
@@ -158,12 +304,23 @@
       <!-- Pagination -->
       <div id="paginationContainer" class="pagination-container" style="display:none;"></div>
 
-      <!-- Empty State -->
+      <!-- Empty State with Line-Icon & Clear Next Action -->
       <div id="emptyState" class="empty-state" style="display:none;">
-        <div class="empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-        <h3>No Tournaments Found</h3>
-        <p>Try different filters.</p>
-        <button id="resetEmptyFiltersBtn" class="btn-primary">Reset</button>
+        <div class="empty-state-icon-wrap">
+          <svg class="empty-reticle-svg" viewBox="0 0 64 64" fill="none" width="56" height="56">
+            <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" opacity="0.35"/>
+            <circle cx="32" cy="32" r="20" stroke="currentColor" stroke-width="2" opacity="0.6"/>
+            <circle cx="32" cy="32" r="10" stroke="currentColor" stroke-width="2" opacity="0.85"/>
+            <line x1="32" y1="2" x2="32" y2="62" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.4"/>
+            <line x1="2" y1="32" x2="62" y2="32" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.4"/>
+            <circle cx="32" cy="32" r="3" fill="var(--target-gold)"/>
+          </svg>
+        </div>
+        <h3 class="empty-state-title">No Tournaments Found</h3>
+        <p class="empty-state-desc">No competitions match your current filter criteria or search keyword. Reset your filters to browse the entire calendar.</p>
+        <button id="resetEmptyFiltersBtn" class="btn-primary reset-filter-cta">
+          <i class="fa-solid fa-rotate-left"></i> Reset All Filters
+        </button>
       </div>
     </section>
   </main>
@@ -173,43 +330,66 @@
     <div class="modal-container">
       <div class="modal-header">
         <div class="modal-title-area">
-          <div class="modal-code-badge" id="modalTournamentCode">SUKIPT26</div>
+          <div class="modal-header-top-row">
+            <span class="modal-code-badge" id="modalTournamentCode">SUKIPT26</span>
+            <div id="modalStatusBadge" class="status-pill status-upcoming">
+              <span class="status-dot upcoming"></span> UPCOMING
+            </div>
+            <a id="modalIanseoExternalLink" href="#" target="_blank" rel="noopener" class="modal-ianseo-link" title="Open verified official tournament page on Ianseo.net">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Ianseo.net
+            </a>
+          </div>
           <h2 class="modal-tournament-title" id="modalTournamentTitle">Tournament Name</h2>
-          <div class="modal-tournament-meta" id="modalTournamentMeta">Organizer • Location • Dates</div>
+          
+          <!-- Modern Metadata Chips (Calendar, Location, Organizer, Freshness) -->
+          <div class="modal-meta-chips" id="modalTournamentMetaChips">
+            <span class="meta-chip" id="modalDateChip"><i class="fa-regular fa-calendar"></i> <span id="modalDateText">1-5 Sep 2026</span></span>
+            <span class="meta-chip" id="modalLocationChip"><i class="fa-solid fa-location-dot"></i> <span id="modalLocationText">Universiti Malaya</span></span>
+            <span class="meta-chip" id="modalOrganizerChip"><i class="fa-solid fa-building"></i> <span id="modalOrganizerText">NAAM</span></span>
+            <span class="meta-chip freshness" id="modalUpdatedChip"><i class="fa-regular fa-clock"></i> <span id="modalUpdatedText">Updated: Today</span></span>
+          </div>
+          <div id="modalTournamentMeta" style="display:none;"></div>
         </div>
-        <button class="modal-close-btn" id="closeModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        <button class="modal-close-btn" id="closeModalBtn" title="Close" aria-label="Close modal"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
-      <!-- Modal Nav Tabs -->
-      <div class="modal-tabs" id="modalTabs">
-        <button class="modal-tab active" data-tab="overview"><i class="fa-solid fa-file-lines"></i> Overview</button>
-        <button class="modal-tab" data-tab="qualifications"><i class="fa-solid fa-bullseye"></i> Qualifications</button>
-        <button class="modal-tab" data-tab="brackets" id="modalTabBrackets"><i class="fa-solid fa-sitemap"></i> Finals & Brackets</button>
-        <button class="modal-tab" data-tab="entries"><i class="fa-solid fa-users"></i> Roster</button>
-        <button class="modal-tab" data-tab="export"><i class="fa-solid fa-file-export"></i> Export</button>
+      <!-- Modal Nav Tabs with Active Underline/Pill -->
+      <div class="modal-tabs" id="modalTabs" role="tablist">
+        <button class="modal-tab active" data-tab="overview" role="tab" aria-selected="true">
+          <i class="fa-solid fa-file-lines"></i>
+          <span>Overview</span>
+        </button>
+        <button class="modal-tab" data-tab="qualifications" role="tab" aria-selected="false">
+          <i class="fa-solid fa-bullseye"></i>
+          <span>Qualifications</span>
+        </button>
+        <button class="modal-tab" data-tab="brackets" id="modalTabBrackets" role="tab" aria-selected="false">
+          <i class="fa-solid fa-sitemap"></i>
+          <span>Finals & Brackets</span>
+        </button>
+        <button class="modal-tab" data-tab="entries" role="tab" aria-selected="false">
+          <i class="fa-solid fa-users"></i>
+          <span>Roster</span>
+        </button>
+        <button class="modal-tab" data-tab="export" role="tab" aria-selected="false">
+          <i class="fa-solid fa-file-export"></i>
+          <span>Export</span>
+        </button>
       </div>
 
       <!-- Modal Body -->
       <div class="modal-body" id="modalBody">
         <!-- Overview & Documents Tab -->
         <div id="tabOverview" class="tab-pane active">
-          <div class="tournament-hero-card">
-            <div class="hero-badges-row">
-              <span id="modalLiveBadge" class="status-chip live" style="display:none;"><i class="fa-solid fa-circle pulse-dot"></i> Live</span>
-              <span id="modalDateChip" class="status-chip"><i class="fa-solid fa-calendar"></i> 1-5 Sep 2026</span>
-              <span id="modalLocationChip" class="status-chip"><i class="fa-solid fa-location-dot"></i> Universiti Malaya</span>
-            </div>
-          </div>
-
           <!-- Official Documents Grid -->
           <div class="sub-section">
-            <h3 class="sub-section-title"><i class="fa-solid fa-file-lines"></i> Documents</h3>
+            <h3 class="sub-section-title"><i class="fa-solid fa-file-lines"></i> Official Tournament Documents</h3>
             <div class="docs-grid" id="modalDocsGrid"></div>
           </div>
 
           <!-- Other Available Result Pages -->
           <div class="sub-section">
-            <h3 class="sub-section-title"><i class="fa-solid fa-list-check"></i> Results & Brackets</h3>
+            <h3 class="sub-section-title"><i class="fa-solid fa-list-check"></i> Published Stages & Sub-events</h3>
             <div class="sections-accordion" id="modalSectionsAccordion"></div>
           </div>
         </div>
@@ -222,14 +402,18 @@
               <select id="qualCategorySelect" class="styled-select"></select>
             </div>
             <div class="search-mini">
-              <i class="fa-solid fa-search"></i>
-              <input type="text" id="qualSearchInput" placeholder="Filter...">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="qualSearchInput" placeholder="Filter archer or club...">
             </div>
           </div>
 
           <!-- Qual Table Loader -->
           <div id="qualLoader" class="loader-container mini" style="display:none;">
-            <div class="ring-spinner"></div>
+            <div class="skeleton-lines-box">
+              <div class="skeleton-bar md"></div>
+              <div class="skeleton-bar md short"></div>
+              <div class="skeleton-bar md"></div>
+            </div>
           </div>
 
           <!-- Qual Table Content -->
@@ -281,15 +465,22 @@
 
           <!-- Bracket Loader -->
           <div id="bracketLoader" class="loader-container mini" style="display:none;">
-            <div class="ring-spinner"></div>
-            <span style="font-size:0.82rem;color:var(--text-muted);margin-top:0.5rem;">Loading tournament bracket...</span>
+            <div class="skeleton-lines-box">
+              <div class="skeleton-bar md"></div>
+              <div class="skeleton-bar md short"></div>
+            </div>
           </div>
 
-          <!-- Empty State -->
+          <!-- Bracket Empty State -->
           <div id="bracketEmptyState" class="bracket-empty-state" style="display:none;">
-            <i class="fa-solid fa-sitemap"></i>
-            <h4>No Bracket or Finals Data</h4>
-            <p>Elimination brackets or final rounds have not been published for this tournament yet.</p>
+            <div class="empty-bracket-icon">
+              <i class="fa-solid fa-sitemap"></i>
+            </div>
+            <h4>No Bracket or Finals Data Published</h4>
+            <p>Elimination brackets or final match results have not been posted by the tournament committee yet.</p>
+            <button class="btn-secondary" id="bracketBackOverviewBtn">
+              <i class="fa-solid fa-arrow-left"></i> Back to Overview
+            </button>
           </div>
 
           <!-- 1. Interactive Bracket Tree View -->
@@ -324,14 +515,17 @@
               <select id="entriesCategorySelect" class="styled-select"></select>
             </div>
             <div class="search-mini">
-              <i class="fa-solid fa-search"></i>
-              <input type="text" id="entriesSearchInput" placeholder="Filter...">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="entriesSearchInput" placeholder="Search participant...">
             </div>
           </div>
 
           <!-- Entries Table Loader -->
           <div id="entriesLoader" class="loader-container mini" style="display:none;">
-            <div class="ring-spinner"></div>
+            <div class="skeleton-lines-box">
+              <div class="skeleton-bar md"></div>
+              <div class="skeleton-bar md short"></div>
+            </div>
           </div>
 
           <!-- Entries Content -->
@@ -343,34 +537,90 @@
           </div>
         </div>
 
-        <!-- Export Hub Tab -->
+        <!-- Export Hub Tab (Card Grid + Syntax-Highlighted Terminal Snippet) -->
         <div id="tabExport" class="tab-pane">
           <div class="export-hub-container">
-            <div class="export-card">
-              <div class="export-icon"><i class="fa-solid fa-file-code"></i></div>
-              <div class="export-info">
-                <h4>JSON Data</h4>
-                <p>Clean structured tournament metadata.</p>
-              </div>
-              <button id="downloadJsonBtn" class="btn-primary"><i class="fa-solid fa-download"></i> JSON</button>
+            <div class="export-section-header">
+              <h3 class="export-hub-title"><i class="fa-solid fa-file-export"></i> Export & Developer Integration</h3>
+              <p class="export-hub-desc">Extract verified tournament records in structured formats, integrate into scoring spreadsheets, or query through the headless CLI.</p>
             </div>
 
-            <div class="export-card">
-              <div class="export-icon"><i class="fa-solid fa-file-csv"></i></div>
-              <div class="export-info">
-                <h4>CSV Spreadsheet</h4>
-                <p>Export qualification or participant roster.</p>
+            <!-- Export Cards Grid -->
+            <div class="export-cards-grid">
+              <!-- JSON Card -->
+              <div class="export-format-card">
+                <div class="card-icon-tag json">
+                  <i class="fa-solid fa-file-code"></i>
+                </div>
+                <div class="card-body-text">
+                  <h4>Structured JSON</h4>
+                  <p>Full parsed competition tree including classifications, round metadata, and target scores.</p>
+                </div>
+                <button id="downloadJsonBtn" class="btn-export-card primary">
+                  <i class="fa-solid fa-download"></i> Download JSON
+                </button>
               </div>
-              <button id="downloadCsvBtn" class="btn-secondary"><i class="fa-solid fa-file-excel"></i> CSV</button>
+
+              <!-- CSV Card -->
+              <div class="export-format-card">
+                <div class="card-icon-tag csv">
+                  <i class="fa-solid fa-file-csv"></i>
+                </div>
+                <div class="card-body-text">
+                  <h4>CSV Spreadsheet</h4>
+                  <p>Formatted qualification rankings, scores, 10s/Xs, and roster entries ready for Excel or Google Sheets.</p>
+                </div>
+                <button id="downloadCsvBtn" class="btn-export-card secondary">
+                  <i class="fa-solid fa-file-excel"></i> Export CSV
+                </button>
+              </div>
+
+              <!-- CLI Card -->
+              <div class="export-format-card">
+                <div class="card-icon-tag cli">
+                  <i class="fa-solid fa-terminal"></i>
+                </div>
+                <div class="card-body-text">
+                  <h4>CLI & Automation</h4>
+                  <p>Query headless scores and tournament data straight from your command line terminal.</p>
+                </div>
+                <button id="copyCliCommandBtn" class="btn-export-card outline">
+                  <i class="fa-regular fa-copy"></i> Copy CLI Command
+                </button>
+              </div>
             </div>
 
-            <div class="export-card">
-              <div class="export-icon"><i class="fa-solid fa-terminal"></i></div>
-              <div class="export-info">
-                <h4>CLI & API</h4>
-                <p>Headless scraper & REST API access.</p>
+            <!-- Syntax-Highlighted CLI Code Terminal Block -->
+            <div class="cli-snippet-wrapper">
+              <div class="terminal-box">
+                <div class="terminal-header">
+                  <div class="terminal-dots">
+                    <span class="tdot red"></span>
+                    <span class="tdot yellow"></span>
+                    <span class="tdot green"></span>
+                  </div>
+                  <div class="terminal-title">bash — ianseo-pro cli</div>
+                  <button id="copyCliSnippetBtn" class="terminal-copy-action" title="Copy CLI Command">
+                    <i class="fa-regular fa-copy"></i> Copy
+                  </button>
+                </div>
+                <pre class="terminal-content"><code><span class="t-cmd">npx</span> <span class="t-pkg">ianseo-pro</span> <span class="t-sub">tournament</span> <span class="t-val" id="cliTerminalToId">30270</span> <span class="t-flag">--format</span> <span class="t-opt">json</span> <span class="t-flag">--output</span> <span class="t-val">./results.json</span></code></pre>
               </div>
-              <button id="copyCliCommandBtn" class="btn-outline"><i class="fa-solid fa-copy"></i> Copy CLI</button>
+
+              <!-- Direct API Endpoint Card -->
+              <div class="api-endpoint-card">
+                <div class="api-endpoint-meta">
+                  <span class="api-badge">REST API</span>
+                  <span class="api-hint">Direct JSON Endpoint</span>
+                </div>
+                <div class="api-endpoint-display">
+                  <span class="api-method">GET</span>
+                  <code id="apiEndpointDisplay">/api/tournaments/30270</code>
+                  <button id="copyApiEndpointBtn" class="btn-mini-copy" title="Copy Endpoint URL">
+                    <i class="fa-regular fa-copy"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -383,11 +633,11 @@
     <div class="modal-container pdf-modal-container">
       <div class="modal-header">
         <div class="modal-title-area">
-          <h3 class="modal-tournament-title" id="pdfModalTitle">Document Viewer</h3>
+          <h3 class="modal-tournament-title" id="pdfModalTitle">Official Document Viewer</h3>
         </div>
         <div class="pdf-modal-actions">
           <a id="pdfDownloadDirectBtn" href="#" target="_blank" class="btn-secondary" download><i class="fa-solid fa-download"></i> Save PDF</a>
-          <button class="modal-close-btn" id="closePdfModalBtn"><i class="fa-solid fa-xmark"></i></button>
+          <button class="modal-close-btn" id="closePdfModalBtn" title="Close"><i class="fa-solid fa-xmark"></i></button>
         </div>
       </div>
       <div class="pdf-modal-body">
@@ -399,16 +649,19 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast" style="display:none;"></div>
 
-  <!-- Footer -->
+  <!-- Footer with Prominent Attribution -->
   <footer class="app-footer">
     <div class="footer-container">
       <div class="footer-left">
-        <div class="footer-brand">IANSEO<span>PRO</span></div>
+        <div class="footer-brand">IANSEO<span class="brand-pro">PRO</span></div>
+        <div class="footer-attribution">
+          Data synchronized live from the official <a href="https://www.ianseo.net" target="_blank" rel="noopener">Ianseo.net</a> archery platform.
+        </div>
       </div>
       <div class="footer-right">
         <div class="footer-links">
           <a href="https://www.ianseo.net" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> Ianseo.net</a>
-          <a href="/api/tournaments" target="_blank"><i class="fa-solid fa-code"></i> API</a>
+          <a href="/api/tournaments" target="_blank"><i class="fa-solid fa-code"></i> REST API</a>
         </div>
       </div>
     </div>

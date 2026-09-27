@@ -13,7 +13,7 @@ const state = {
   countries: [],
   years: [],
   currentPage: 1,
-  pageSize: 150,
+  pageSize: 60,
   activeTournament: null,
   activeTournamentDetails: null,
   autoRefreshInterval: null,
@@ -31,23 +31,24 @@ const elements = {
   brandHomeBtn: document.getElementById('brandHomeBtn'),
   globalSearchInput: document.getElementById('globalSearchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
-  liveFilterBtn: document.getElementById('liveFilterBtn'),
-  liveCountBadge: document.getElementById('liveCountBadge'),
   themeToggleBtn: document.getElementById('themeToggleBtn'),
   targetSimBtn: document.getElementById('targetSimBtn'),
   
   // Hero stats
   statTotalTournaments: document.getElementById('statTotalTournaments'),
-  statLiveCount: document.getElementById('statLiveCount'),
   statCountriesCount: document.getElementById('statCountriesCount'),
   
   // Filters
   statusTabs: document.getElementById('statusTabs'),
+  yearChipsContainer: document.getElementById('yearChipsContainer'),
+  countryChipsContainer: document.getElementById('countryChipsContainer'),
   yearSelect: document.getElementById('yearSelect'),
   countrySelect: document.getElementById('countrySelect'),
   viewGridBtn: document.getElementById('viewGridBtn'),
   viewTableBtn: document.getElementById('viewTableBtn'),
   autoRefreshBtn: document.getElementById('autoRefreshBtn'),
+  freshnessIndicator: document.getElementById('freshnessIndicator'),
+  freshnessLabel: document.getElementById('freshnessLabel'),
   activeFiltersBar: document.getElementById('activeFiltersBar'),
   filterChips: document.getElementById('filterChips'),
   resetAllFiltersBtn: document.getElementById('resetAllFiltersBtn'),
@@ -55,8 +56,6 @@ const elements = {
   
   // Results
   tournamentsHeading: document.getElementById('tournamentsHeading'),
-  sectionLiveBadge: document.getElementById('sectionLiveBadge'),
-  sectionLiveCount: document.getElementById('sectionLiveCount'),
   resultsCount: document.getElementById('resultsCount'),
   mainLoader: document.getElementById('mainLoader'),
   tournamentsGrid: document.getElementById('tournamentsGrid'),
@@ -69,11 +68,19 @@ const elements = {
   tournamentModal: document.getElementById('tournamentModal'),
   closeModalBtn: document.getElementById('closeModalBtn'),
   modalTournamentCode: document.getElementById('modalTournamentCode'),
+  modalStatusBadge: document.getElementById('modalStatusBadge'),
+  modalIanseoExternalLink: document.getElementById('modalIanseoExternalLink'),
   modalTournamentTitle: document.getElementById('modalTournamentTitle'),
   modalTournamentMeta: document.getElementById('modalTournamentMeta'),
-  modalLiveBadge: document.getElementById('modalLiveBadge'),
+  modalTournamentMetaChips: document.getElementById('modalTournamentMetaChips'),
   modalDateChip: document.getElementById('modalDateChip'),
   modalLocationChip: document.getElementById('modalLocationChip'),
+  modalOrganizerChip: document.getElementById('modalOrganizerChip'),
+  modalUpdatedChip: document.getElementById('modalUpdatedChip'),
+  modalDateText: document.getElementById('modalDateText'),
+  modalLocationText: document.getElementById('modalLocationText'),
+  modalOrganizerText: document.getElementById('modalOrganizerText'),
+  modalUpdatedText: document.getElementById('modalUpdatedText'),
   modalDocsGrid: document.getElementById('modalDocsGrid'),
   modalSectionsAccordion: document.getElementById('modalSectionsAccordion'),
   modalTabs: document.getElementById('modalTabs'),
@@ -100,6 +107,7 @@ const elements = {
   bracketPdfBtn: document.getElementById('bracketPdfBtn'),
   bracketLoader: document.getElementById('bracketLoader'),
   bracketEmptyState: document.getElementById('bracketEmptyState'),
+  bracketBackOverviewBtn: document.getElementById('bracketBackOverviewBtn'),
   bracketTreeWrapper: document.getElementById('bracketTreeWrapper'),
   bracketTreeCanvas: document.getElementById('bracketTreeCanvas'),
   bracketCardsWrapper: document.getElementById('bracketCardsWrapper'),
@@ -121,6 +129,10 @@ const elements = {
   downloadJsonBtn: document.getElementById('downloadJsonBtn'),
   downloadCsvBtn: document.getElementById('downloadCsvBtn'),
   copyCliCommandBtn: document.getElementById('copyCliCommandBtn'),
+  cliTerminalToId: document.getElementById('cliTerminalToId'),
+  apiEndpointDisplay: document.getElementById('apiEndpointDisplay'),
+  copyCliSnippetBtn: document.getElementById('copyCliSnippetBtn'),
+  copyApiEndpointBtn: document.getElementById('copyApiEndpointBtn'),
   
   // PDF Modal
   pdfModal: document.getElementById('pdfModal'),
@@ -228,21 +240,16 @@ function setupEventListeners() {
     updateThemeIcon(next);
   });
 
-  // Live filter pill (if present)
-  if (elements.liveFilterBtn) {
-    elements.liveFilterBtn.addEventListener('click', () => {
-      setActiveStatusTab('1');
+  // Status tabs
+  if (elements.statusTabs) {
+    elements.statusTabs.querySelectorAll('.status-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const timeVal = btn.getAttribute('data-time');
+        state.currentPage = 1;
+        setActiveStatusTab(timeVal);
+      });
     });
   }
-
-  // Status tabs
-  elements.statusTabs.querySelectorAll('.status-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const timeVal = btn.getAttribute('data-time');
-      state.currentPage = 1;
-      setActiveStatusTab(timeVal);
-    });
-  });
 
   // Year select
   elements.yearSelect.addEventListener('change', async (e) => {
@@ -348,6 +355,21 @@ function setupEventListeners() {
   elements.downloadCsvBtn.addEventListener('click', exportActiveTournamentCsv);
   elements.copyCliCommandBtn.addEventListener('click', copyCliCommand);
 
+  // Additional CLI / API copy triggers
+  if (elements.copyCliSnippetBtn) {
+    elements.copyCliSnippetBtn.addEventListener('click', copyCliCommand);
+  }
+  if (elements.copyApiEndpointBtn) {
+    elements.copyApiEndpointBtn.addEventListener('click', copyApiEndpoint);
+  }
+
+  // Bracket Empty State Back Button
+  if (elements.bracketBackOverviewBtn) {
+    elements.bracketBackOverviewBtn.addEventListener('click', () => {
+      switchModalTab('overview');
+    });
+  }
+
   // PDF modal
   elements.closePdfModalBtn.addEventListener('click', closePdfModal);
   elements.pdfModal.addEventListener('click', (e) => {
@@ -366,6 +388,98 @@ function setupEventListeners() {
   // SVG Target ring clicks (if present)
   if (elements.targetSvg) elements.targetSvg.addEventListener('click', handleTargetClick);
   if (elements.resetSimArrowsBtn) elements.resetSimArrowsBtn.addEventListener('click', resetSimEnd);
+}
+
+/**
+ * Determine tournament status badge info (Live / Upcoming / Past)
+ */
+function getTournamentStatusInfo(t) {
+  // If query is explicitly comptime 2 or 3
+  if (state.comptime === '2') {
+    return {
+      status: 'past',
+      label: 'Past',
+      html: `<span class="status-pill status-past"><span class="status-dot past"></span> Past</span>`
+    };
+  }
+  if (state.comptime === '3') {
+    return {
+      status: 'upcoming',
+      label: 'Upcoming',
+      html: `<span class="status-pill status-upcoming"><span class="status-dot upcoming"></span> Upcoming</span>`
+    };
+  }
+
+  // Check tournament date against current date
+  const isPast = isTournamentInPast(t.dates, state.year);
+  if (isPast) {
+    return {
+      status: 'past',
+      label: 'Past',
+      html: `<span class="status-pill status-past"><span class="status-dot past"></span> Past</span>`
+    };
+  }
+
+  // Check if tournament is occurring today / in today section
+  if (t.isLiveToday || (t.section && t.section.toLowerCase().includes('today'))) {
+    return {
+      status: 'ongoing',
+      label: 'Today',
+      html: `<span class="status-pill status-ongoing"><span class="status-dot ongoing"></span> Today</span>`
+    };
+  }
+
+  return {
+    status: 'upcoming',
+    label: 'Upcoming',
+    html: `<span class="status-pill status-upcoming"><span class="status-dot upcoming"></span> Upcoming</span>`
+  };
+}
+
+/**
+ * Check if tournament date string indicates a past event
+ */
+function isTournamentInPast(datesStr, yearStr) {
+  if (!datesStr) return false;
+  const tourYear = parseInt(yearStr || '2026', 10);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  if (tourYear < currentYear) return true;
+  if (tourYear > currentYear) return false;
+
+  const months = {
+    'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+    'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+  };
+
+  const cleanStr = datesStr.toLowerCase();
+  const matches = cleanStr.match(/(?:(\d{1,2})\s+)?([a-z]{3})/g);
+  
+  if (matches && matches.length > 0) {
+    const lastMatch = matches[matches.length - 1];
+    const parts = lastMatch.trim().split(/\s+/);
+    let monthName = '';
+    let day = 1;
+    if (parts.length === 2) {
+      day = parseInt(parts[0], 10);
+      monthName = parts[1];
+    } else if (parts.length === 1) {
+      monthName = parts[0];
+      const numMatch = cleanStr.match(/(\d{1,2})(?:\s*-\s*\d{1,2})?\s*[a-z]{3}/);
+      if (numMatch) {
+        const nums = numMatch[0].match(/\d+/g);
+        if (nums) day = parseInt(nums[nums.length - 1], 10);
+      }
+    }
+
+    if (months[monthName] !== undefined) {
+      const endDateTime = new Date(tourYear, months[monthName], day, 23, 59, 59);
+      return endDateTime < now;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -397,6 +511,13 @@ async function loadTournaments() {
       updateHeroStats(data);
       renderTournaments();
       updateFilterChips();
+
+      // Update Freshness timestamp
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (elements.freshnessLabel) {
+        elements.freshnessLabel.textContent = `Synced Today ${timeStr}`;
+      }
     } else {
       showToast('Error loading competitions: ' + (data.error || 'Unknown error'));
     }
@@ -412,11 +533,6 @@ async function loadTournaments() {
  * Update Hero Stats
  */
 function updateHeroStats(data) {
-  const liveTournaments = state.tournaments.filter(t => t.isLiveToday);
-  const liveCount = liveTournaments.length;
-
-  if (elements.liveCountBadge) elements.liveCountBadge.textContent = liveCount;
-  if (elements.statLiveCount) elements.statLiveCount.textContent = liveCount > 0 ? `${liveCount} Active` : '0 Active';
   if (elements.statTotalTournaments) elements.statTotalTournaments.textContent = `${data.totalCount || state.tournaments.length}`;
   if (elements.statCountriesCount && state.countries.length > 0) {
     elements.statCountriesCount.textContent = `${state.countries.length} Countries`;
@@ -424,38 +540,119 @@ function updateHeroStats(data) {
 }
 
 /**
- * Populate Country Dropdown
+ * Populate Country Chips and Dropdown
  */
 function populateCountryOptions() {
-  const currentVal = state.countryid || 'MAS';
-  elements.countrySelect.innerHTML = '<option value="">All Countries</option>';
+  const currentVal = state.countryid !== undefined ? state.countryid : 'MAS';
 
-  state.countries.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.code;
-    opt.textContent = c.name.includes(c.code) ? c.name : `${c.name} (${c.code})`;
-    if (c.code === currentVal) opt.selected = true;
-    elements.countrySelect.appendChild(opt);
+  const cleanCountries = (state.countries || []).map(c => ({
+    code: c.code,
+    name: c.name.replace(/^\*+\s*/, '').trim()
+  }));
+
+  if (elements.countrySelect) {
+    elements.countrySelect.innerHTML = '<option value="MAS">🇲🇾 Malaysia (MAS)</option><option value="">🌍 All Countries</option>';
+    cleanCountries.forEach(c => {
+      if (c.code === 'MAS') return;
+      const opt = document.createElement('option');
+      opt.value = c.code;
+      opt.textContent = c.name.includes(c.code) ? c.name : `${c.name} (${c.code})`;
+      if (c.code === currentVal) opt.selected = true;
+      elements.countrySelect.appendChild(opt);
+    });
+    elements.countrySelect.value = currentVal;
+  }
+
+  renderCountryChips();
+}
+
+function renderCountryChips() {
+  if (!elements.countryChipsContainer) return;
+  elements.countryChipsContainer.innerHTML = '';
+
+  const currentVal = state.countryid;
+
+  const quickCountries = [
+    { code: 'MAS', label: '🇲🇾 Malaysia' },
+    { code: '', label: '🌍 All Countries' }
+  ];
+
+  if (currentVal && currentVal !== 'MAS') {
+    const found = (state.countries || []).find(c => c.code === currentVal);
+    const label = found ? found.name.replace(/^\*+\s*/, '').trim() : currentVal;
+    quickCountries.splice(1, 0, { code: currentVal, label: label });
+  }
+
+  quickCountries.forEach(item => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `chip-btn ${item.code === currentVal ? 'active' : ''}`;
+    chip.setAttribute('data-country', item.code);
+    chip.textContent = item.label;
+    chip.addEventListener('click', async () => {
+      if (state.countryid === item.code) return;
+      state.countryid = item.code;
+      state.currentPage = 1;
+      if (elements.countrySelect) elements.countrySelect.value = item.code;
+      renderCountryChips();
+      await loadTournaments();
+    });
+    elements.countryChipsContainer.appendChild(chip);
   });
-
-  elements.countrySelect.value = currentVal;
 }
 
 /**
- * Populate Year Dropdown
+ * Populate Year Chips and Dropdown
  */
 function populateYearOptions() {
-  const currentYear = state.year;
-  if (state.years.length > 0) {
+  const currentYear = state.year || '2026';
+  const yearsList = state.years && state.years.length > 0
+    ? state.years.map(y => y.replace(/^\*+\s*/, '').trim()).filter(Boolean)
+    : ['2027', '2026', '2025', '2024', '2023', '2022', '2021', '2020'];
+
+  if (elements.yearSelect) {
     elements.yearSelect.innerHTML = '';
-    state.years.forEach(y => {
+    yearsList.forEach(y => {
       const opt = document.createElement('option');
       opt.value = y;
       opt.textContent = y;
       if (y === currentYear) opt.selected = true;
       elements.yearSelect.appendChild(opt);
     });
+    elements.yearSelect.value = currentYear;
   }
+
+  renderYearChips(yearsList, currentYear);
+}
+
+function renderYearChips(yearsList, currentYear) {
+  if (!elements.yearChipsContainer) return;
+  elements.yearChipsContainer.innerHTML = '';
+
+  const list = yearsList || ['2027', '2026', '2025', '2024', '2023'];
+  const primaryYears = list.slice(0, 5);
+  const activeYear = currentYear || state.year;
+
+  if (!primaryYears.includes(activeYear)) {
+    primaryYears.push(activeYear);
+  }
+
+  primaryYears.forEach(y => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `chip-btn ${y === activeYear ? 'active' : ''}`;
+    chip.setAttribute('data-year', y);
+    chip.textContent = y;
+    chip.addEventListener('click', async () => {
+      if (state.year === y) return;
+      state.year = y;
+      state.currentPage = 1;
+      if (elements.yearSelect) elements.yearSelect.value = y;
+      renderYearChips(list, y);
+      await loadTournaments();
+    });
+    elements.yearChipsContainer.appendChild(chip);
+  });
 }
 
 /**
@@ -536,7 +733,7 @@ function renderPagination(totalCount, totalPages) {
 
   const info = document.createElement('div');
   info.className = 'pagination-info';
-  info.innerHTML = `Page <span>${state.currentPage}</span> of <span>${totalPages}</span> (<span>150</span> / page)`;
+  info.innerHTML = `Page <span>${state.currentPage}</span> of <span>${totalPages}</span> (<span>${state.pageSize}</span> / page)`;
 
   const controls = document.createElement('div');
   controls.className = 'pagination-controls';
@@ -623,24 +820,23 @@ function renderGridView(list) {
 
   list.forEach(t => {
     const card = document.createElement('div');
-    card.className = `tournament-card ${t.isLiveToday ? 'live-card' : ''}`;
+    const statusInfo = getTournamentStatusInfo(t);
+    const isFresh = (t.updated || '').toLowerCase().includes('today');
+
+    card.className = 'tournament-card';
 
     const flagHtml = t.flagSrc 
-      ? `<img class="flag-img" src="${t.flagSrc}" alt="${t.country}" title="${t.country}" onerror="this.style.display='none'">`
+      ? `<img class="flag-img" src="${t.flagSrc}" alt="${escapeHtml(t.country || '')}" title="${escapeHtml(t.country || '')}" onerror="this.style.display='none'">`
       : `<i class="fa-solid fa-flag" style="color:var(--text-muted)"></i>`;
-
-    const liveBadgeHtml = t.isLiveToday
-      ? `<span class="live-badge"><span class="pulse-dot"></span> LIVE</span>`
-      : '';
 
     card.innerHTML = `
       <div>
         <div class="card-top">
           <div class="flag-badge-group">
             ${flagHtml}
-            <span class="tour-code">${t.code || 'WA'}</span>
+            <span class="tour-code">${escapeHtml(t.code || 'WA')}</span>
           </div>
-          ${liveBadgeHtml}
+          ${statusInfo.html}
         </div>
         <h3 class="tour-title" title="${escapeHtml(t.name)}">${escapeHtml(t.name)}</h3>
         <div class="tour-meta-list">
@@ -653,17 +849,17 @@ function renderGridView(list) {
             <span>${escapeHtml(t.location || t.country || 'International')}</span>
           </div>
           <div class="tour-meta-item">
-            <i class="fa-solid fa-calendar"></i>
-            <span>${escapeHtml(t.dates || 'Dates not set')}</span>
+            <i class="fa-regular fa-calendar"></i>
+            <span style="font-variant-numeric: tabular-nums;">${escapeHtml(t.dates || 'Dates TBA')}</span>
           </div>
         </div>
       </div>
       <div class="card-footer">
-        <div class="updated-text">
-          <i class="fa-solid fa-clock-rotate-left"></i> ${escapeHtml(t.updated || 'Recent')}
+        <div class="tour-freshness-tag ${isFresh ? 'fresh' : ''}" title="Freshness: ${escapeHtml(t.updated || 'Recent')}">
+          <i class="fa-regular fa-clock"></i> <span>${escapeHtml(t.updated || 'Recent')}</span>
         </div>
         <div class="card-action-btn">
-          <span>View</span>
+          <span>View Hub</span>
           <i class="fa-solid fa-arrow-right"></i>
         </div>
       </div>
@@ -685,25 +881,22 @@ function renderTableView(list) {
 
   list.forEach(t => {
     const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-
-    const liveBadge = t.isLiveToday
-      ? `<span class="live-badge"><span class="pulse-dot"></span> Live</span>`
-      : `<span style="color:var(--text-muted);font-size:0.75rem;">Normal</span>`;
+    const statusInfo = getTournamentStatusInfo(t);
+    const isFresh = (t.updated || '').toLowerCase().includes('today');
 
     const flagHtml = t.flagSrc
-      ? `<img class="flag-img" src="${t.flagSrc}" alt="${t.country}" style="vertical-align:middle;margin-right:6px;">`
+      ? `<img class="flag-img" src="${t.flagSrc}" alt="${escapeHtml(t.country || '')}" style="vertical-align:middle;margin-right:6px;" onerror="this.style.display='none'">`
       : '';
 
     tr.innerHTML = `
-      <td>${liveBadge}</td>
-      <td><span class="tour-code">${t.code || 'WA'}</span></td>
-      <td><strong style="color:var(--text-primary);">${escapeHtml(t.name)}</strong></td>
-      <td><span style="color:var(--text-secondary);font-size:0.82rem;">${escapeHtml(t.organizer)}</span></td>
-      <td>${flagHtml} <span style="font-size:0.85rem;">${escapeHtml(t.location || t.country)}</span></td>
-      <td><span style="font-family:var(--font-mono);font-size:0.82rem;">${escapeHtml(t.dates)}</span></td>
-      <td><span style="color:var(--text-muted);font-size:0.78rem;">${escapeHtml(t.updated)}</span></td>
-      <td><button class="btn-primary" style="padding:0.3rem 0.75rem;font-size:0.78rem;">View <i class="fa-solid fa-chevron-right"></i></button></td>
+      <td class="col-top">${statusInfo.html}</td>
+      <td class="col-code"><span class="tour-code">${escapeHtml(t.code || 'WA')}</span></td>
+      <td class="col-title"><strong style="color:var(--text-primary);font-weight:700;">${escapeHtml(t.name)}</strong></td>
+      <td class="col-meta"><span style="color:var(--text-secondary);font-size:0.82rem;">${escapeHtml(t.organizer || '-')}</span></td>
+      <td class="col-meta">${flagHtml} <span style="font-size:0.85rem;">${escapeHtml(t.location || t.country || '-')}</span></td>
+      <td class="col-meta"><span style="font-variant-numeric:tabular-nums;font-size:0.82rem;">${escapeHtml(t.dates || '-')}</span></td>
+      <td class="col-bottom"><span class="tour-freshness-tag ${isFresh ? 'fresh' : ''}"><i class="fa-regular fa-clock"></i> ${escapeHtml(t.updated || '-')}</span></td>
+      <td class="col-action" style="text-align:center;"><button class="btn-table-view">View <i class="fa-solid fa-chevron-right"></i></button></td>
     `;
 
     tr.addEventListener('click', () => {
@@ -719,18 +912,28 @@ function renderTableView(list) {
  */
 async function openTournamentHub(tournament) {
   state.activeTournament = tournament;
-  elements.modalTournamentCode.textContent = tournament.code || 'IANSEO';
-  elements.modalTournamentTitle.textContent = tournament.name;
-  elements.modalTournamentMeta.textContent = `${tournament.organizer} • ${tournament.location || tournament.country} • ${tournament.dates}`;
+  const statusInfo = getTournamentStatusInfo(tournament);
 
-  if (tournament.isLiveToday) {
-    elements.modalLiveBadge.style.display = 'inline-flex';
-  } else {
-    elements.modalLiveBadge.style.display = 'none';
+  if (elements.modalTournamentCode) elements.modalTournamentCode.textContent = tournament.code || 'IANSEO';
+  if (elements.modalTournamentTitle) elements.modalTournamentTitle.textContent = tournament.name;
+
+  if (elements.modalStatusBadge) {
+    elements.modalStatusBadge.className = `status-pill status-${statusInfo.status}`;
+    elements.modalStatusBadge.innerHTML = `<span class="status-dot ${statusInfo.status}"></span> ${statusInfo.label.toUpperCase()}`;
   }
 
-  elements.modalDateChip.innerHTML = `<i class="fa-solid fa-calendar"></i> ${tournament.dates || 'Active'}`;
-  elements.modalLocationChip.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${tournament.location || tournament.country || 'Location'}`;
+  if (elements.modalIanseoExternalLink) {
+    elements.modalIanseoExternalLink.href = `https://www.ianseo.net/Details.php?toId=${tournament.toId}`;
+  }
+
+  if (elements.modalDateText) elements.modalDateText.textContent = tournament.dates || 'Active Dates';
+  if (elements.modalLocationText) elements.modalLocationText.textContent = tournament.location || tournament.country || 'Location';
+  if (elements.modalOrganizerText) elements.modalOrganizerText.textContent = tournament.organizer || 'Official Ianseo Event';
+  if (elements.modalUpdatedText) elements.modalUpdatedText.textContent = `Updated: ${tournament.updated || 'Recent'}`;
+
+  // Export tab CLI & API snippet values
+  if (elements.cliTerminalToId) elements.cliTerminalToId.textContent = tournament.toId;
+  if (elements.apiEndpointDisplay) elements.apiEndpointDisplay.textContent = `/api/tournaments/${tournament.toId}`;
 
   // Reset tabs
   switchModalTab('overview');
@@ -739,7 +942,12 @@ async function openTournamentHub(tournament) {
 
   // Load details from API
   try {
-    elements.modalDocsGrid.innerHTML = '<div class="loader-container mini"><div class="ring-spinner"></div><p>Fetching official documents & classifications...</p></div>';
+    elements.modalDocsGrid.innerHTML = `
+      <div class="skeleton-lines-box" style="padding:1rem;">
+        <div class="skeleton-bar md"></div>
+        <div class="skeleton-bar md short"></div>
+      </div>
+    `;
     elements.modalSectionsAccordion.innerHTML = '';
 
     const res = await fetch(`/api/tournaments/${tournament.toId}`);
@@ -1784,9 +1992,16 @@ function exportActiveTournamentCsv() {
 
 function copyCliCommand() {
   if (!state.activeTournament) return;
-  const cmd = `node server/cli.js --id ${state.activeTournament.toId} --details`;
+  const cmd = `npx ianseo-pro tournament ${state.activeTournament.toId} --format json`;
   navigator.clipboard.writeText(cmd);
   showToast('Copied CLI command to clipboard!');
+}
+
+function copyApiEndpoint() {
+  if (!state.activeTournament) return;
+  const endpoint = `${window.location.origin}/api/tournaments/${state.activeTournament.toId}`;
+  navigator.clipboard.writeText(endpoint);
+  showToast('Copied REST API endpoint URL!');
 }
 
 /**
@@ -1870,9 +2085,13 @@ function renderSimScorecard() {
  */
 function setActiveStatusTab(timeVal) {
   state.comptime = timeVal;
-  elements.statusTabs.querySelectorAll('.status-tab').forEach(b => {
-    b.classList.toggle('active', b.getAttribute('data-time') === timeVal);
-  });
+  if (elements.statusTabs) {
+    elements.statusTabs.querySelectorAll('.status-tab').forEach(b => {
+      const isAct = b.getAttribute('data-time') === timeVal;
+      b.classList.toggle('active', isAct);
+      b.setAttribute('aria-selected', isAct ? 'true' : 'false');
+    });
+  }
   loadTournaments();
 }
 
@@ -1888,10 +2107,13 @@ function resetFilters() {
   state.countryid = 'MAS';
   state.comptime = '';
   state.searchQuery = '';
-  elements.globalSearchInput.value = '';
-  elements.clearSearchBtn.style.display = 'none';
-  elements.yearSelect.value = '2026';
-  elements.countrySelect.value = 'MAS';
+  state.currentPage = 1;
+  if (elements.globalSearchInput) elements.globalSearchInput.value = '';
+  if (elements.clearSearchBtn) elements.clearSearchBtn.style.display = 'none';
+  if (elements.yearSelect) elements.yearSelect.value = '2026';
+  if (elements.countrySelect) elements.countrySelect.value = 'MAS';
+  renderYearChips();
+  renderCountryChips();
   setActiveStatusTab('');
 }
 
